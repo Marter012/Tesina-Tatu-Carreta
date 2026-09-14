@@ -11,6 +11,10 @@ import com.tesina_tatu_carreta.model.EntryDetailRoster;
 
 public class EntryDetailRosterDAO {
 
+    // =========================
+    // LIST
+    // =========================
+
     public List<EntryDetailRoster> list() {
 
         List<EntryDetailRoster> details =
@@ -18,14 +22,14 @@ public class EntryDetailRosterDAO {
 
         String sql = """
                 SELECT
-                    d.id_detalle,
-                    a.nombre_vulgar,
-                    d.id_ingreso,
-                    d.cantidad
-                FROM detalle_ingreso d
-                INNER JOIN animales a
-                    ON d.id_animal = a.id_animal
-                ORDER BY d.id_ingreso DESC
+                    d.detail_id,
+                    a.common_name,
+                    d.entry_id,
+                    d.quantity
+                FROM entry_details d
+                INNER JOIN animals a
+                    ON d.animal_id = a.animal_id
+                ORDER BY d.entry_id DESC
                 """;
 
         try (Connection connection =
@@ -40,16 +44,16 @@ public class EntryDetailRosterDAO {
                 EntryDetailRoster detail =
                         new EntryDetailRoster(
                                 result.getInt(
-                                        "id_detalle"
+                                        "detail_id"
                                 ),
                                 result.getString(
-                                        "nombre_vulgar"
+                                        "common_name"
                                 ),
                                 result.getInt(
-                                        "id_ingreso"
+                                        "entry_id"
                                 ),
                                 result.getInt(
-                                        "cantidad"
+                                        "quantity"
                                 )
                         );
 

@@ -3,13 +3,15 @@ package com.tesina_tatu_carreta.model;
 public class EntryDetail {
 
     private int detailId;
-    private int entryId;
+    private Integer entryId;
     private int animalId;
+    private Integer enclosureId;
     private int quantity;
     private String sex;
     private String age;
     private double weight;
     private String entryStatus;
+    private String destination;
     private String observations;
 
     public EntryDetail() {
@@ -23,11 +25,11 @@ public class EntryDetail {
         this.detailId = detailId;
     }
 
-    public int getEntryId() {
+    public Integer getEntryId() {
         return entryId;
     }
 
-    public void setEntryId(int entryId) {
+    public void setEntryId(Integer entryId) {
         this.entryId = entryId;
     }
 
@@ -37,6 +39,14 @@ public class EntryDetail {
 
     public void setAnimalId(int animalId) {
         this.animalId = animalId;
+    }
+
+    public Integer getEnclosureId() {
+        return enclosureId;
+    }
+
+    public void setEnclosureId(Integer enclosureId) {
+        this.enclosureId = enclosureId;
     }
 
     public int getQuantity() {
@@ -77,6 +87,14 @@ public class EntryDetail {
 
     public void setEntryStatus(String entryStatus) {
         this.entryStatus = entryStatus;
+    }
+
+    public String getDestination() {
+        return destination;
+    }
+
+    public void setDestination(String destination) {
+        this.destination = destination;
     }
 
     public String getObservations() {

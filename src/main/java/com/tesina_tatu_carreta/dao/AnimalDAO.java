@@ -11,24 +11,31 @@ import com.tesina_tatu_carreta.model.Animal;
 
 public class AnimalDAO {
 
-    // CREATE
+    // =========================================================
+    // ADD
+    // =========================================================
+
     public void add(Animal animal) {
 
         String sql = """
-                INSERT INTO animales (
-                    id_especie,
-                    nombre_vulgar,
-                    nombre_cientifico,
-                    cantidad_actual,
-                    origen,
-                    estado
+                INSERT INTO animals (
+                    species_id,
+                    common_name,
+                    scientific_name,
+                    current_quantity,
+                    origin,
+                    status
                 )
                 VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
 
             statement.setInt(
                     1,
@@ -47,7 +54,7 @@ public class AnimalDAO {
 
             statement.setInt(
                     4,
-                    animal.getCurrentQuantity()
+                    0
             );
 
             statement.setString(
@@ -62,32 +69,146 @@ public class AnimalDAO {
 
             statement.executeUpdate();
 
-            System.out.println(
-                    "Animal added successfully."
+        } catch (Exception exception) {
+
+            throw new RuntimeException(
+                    "Error adding animal.",
+                    exception
             );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error adding animal."
-            );
-
-            System.out.println(e.getMessage());
         }
     }
 
+    // =========================================================
+    // UPDATE
+    // =========================================================
 
+    public void update(Animal animal) {
+
+        String sql = """
+                UPDATE animals
+                SET
+                    species_id = ?,
+                    common_name = ?,
+                    scientific_name = ?,
+                    origin = ?,
+                    status = ?
+                WHERE animal_id = ?
+                """;
+
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    animal.getSpeciesId()
+            );
+
+            statement.setString(
+                    2,
+                    animal.getCommonName()
+            );
+
+            statement.setString(
+                    3,
+                    animal.getScientificName()
+            );
+
+            statement.setString(
+                    4,
+                    animal.getOrigin()
+            );
+
+            statement.setString(
+                    5,
+                    animal.getStatus()
+            );
+
+            statement.setInt(
+                    6,
+                    animal.getAnimalId()
+            );
+
+            statement.executeUpdate();
+
+        } catch (Exception exception) {
+
+            throw new RuntimeException(
+                    "Error updating animal.",
+                    exception
+            );
+        }
+    }
+
+    // =========================================================
+    // UPDATE CURRENT QUANTITY
+    // =========================================================
+
+    public void updateCurrentQuantity(
+            Connection connection,
+            int animalId,
+            int currentQuantity)
+            throws java.sql.SQLException {
+
+        String status =
+                currentQuantity > 0
+                        ? "Active"
+                        : "Inactive";
+
+        String sql = """
+                UPDATE animals
+                SET
+                    current_quantity = ?,
+                    status = ?
+                WHERE animal_id = ?
+                """;
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    currentQuantity
+            );
+
+            statement.setString(
+                    2,
+                    status
+            );
+
+            statement.setInt(
+                    3,
+                    animalId
+            );
+
+            statement.executeUpdate();
+        }
+    }
+
+    // =========================================================
     // DELETE
+    // =========================================================
+
     public void delete(int animalId) {
 
         String sql = """
-                DELETE FROM animales
-                WHERE id_animal = ?
+                DELETE FROM animals
+                WHERE animal_id = ?
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
 
             statement.setInt(
                     1,
@@ -96,160 +217,177 @@ public class AnimalDAO {
 
             statement.executeUpdate();
 
-            System.out.println(
-                    "Animal deleted successfully."
+        } catch (Exception exception) {
+
+            throw new RuntimeException(
+                    "Error deleting animal.",
+                    exception
             );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error deleting animal."
-            );
-
-            System.out.println(e.getMessage());
         }
     }
 
+    // =========================================================
+    // LIST
+    // =========================================================
 
-    // UPDATE
-    public void update(Animal animal) {
-
-        String sql = """
-                UPDATE animales
-                SET
-                    id_especie = ?,
-                    nombre_vulgar = ?,
-                    nombre_cientifico = ?,
-                    cantidad_actual = ?,
-                    origen = ?,
-                    estado = ?
-                WHERE id_animal = ?
-                """;
-
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
-
-            statement.setInt(
-                    1,
-                    animal.getSpeciesId()
-            );
-
-            statement.setString(
-                    2,
-                    animal.getCommonName()
-            );
-
-            statement.setString(
-                    3,
-                    animal.getScientificName()
-            );
-
-            statement.setInt(
-                    4,
-                    animal.getCurrentQuantity()
-            );
-
-            statement.setString(
-                    5,
-                    animal.getOrigin()
-            );
-
-            statement.setString(
-                    6,
-                    animal.getStatus()
-            );
-
-            statement.setInt(
-                    7,
-                    animal.getAnimalId()
-            );
-
-            statement.executeUpdate();
-
-            System.out.println(
-                    "Animal updated successfully."
-            );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error updating animal."
-            );
-
-            System.out.println(e.getMessage());
-        }
-    }
-
-
-    // READ
     public List<Animal> list() {
 
-        List<Animal> animals = new ArrayList<>();
+        List<Animal> animals =
+                new ArrayList<>();
 
         String sql = """
                 SELECT
-                    id_animal,
-                    id_especie,
-                    nombre_vulgar,
-                    nombre_cientifico,
-                    cantidad_actual,
-                    origen,
-                    estado
-                FROM animales
-                ORDER BY nombre_vulgar
+                    animal_id,
+                    species_id,
+                    common_name,
+                    scientific_name,
+                    current_quantity,
+                    origin,
+                    status
+                FROM animals
+                ORDER BY common_name
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql);
-             ResultSet result =
-                     statement.executeQuery()) {
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql);
+
+                ResultSet result =
+                        statement.executeQuery()
+        ) {
 
             while (result.next()) {
 
-                Animal animal = new Animal();
+                Animal animal =
+                        new Animal();
 
                 animal.setAnimalId(
-                        result.getInt("id_animal")
+                        result.getInt("animal_id")
                 );
 
                 animal.setSpeciesId(
-                        result.getInt("id_especie")
+                        result.getInt("species_id")
                 );
 
                 animal.setCommonName(
-                        result.getString("nombre_vulgar")
+                        result.getString("common_name")
                 );
 
                 animal.setScientificName(
-                        result.getString("nombre_cientifico")
+                        result.getString("scientific_name")
                 );
 
                 animal.setCurrentQuantity(
-                        result.getInt("cantidad_actual")
+                        result.getInt("current_quantity")
                 );
 
                 animal.setOrigin(
-                        result.getString("origen")
+                        result.getString("origin")
                 );
 
                 animal.setStatus(
-                        result.getString("estado")
+                        result.getString("status")
                 );
 
                 animals.add(animal);
             }
 
-        } catch (Exception e) {
+        } catch (Exception exception) {
 
-            System.out.println(
-                    "Error listing animals."
+            throw new RuntimeException(
+                    "Error listing animals.",
+                    exception
             );
-
-            System.out.println(e.getMessage());
         }
 
         return animals;
+    }
+
+    // =========================================================
+    // FIND BY ID
+    // =========================================================
+
+    public Animal findById(int animalId) {
+
+        String sql = """
+                SELECT
+                    animal_id,
+                    species_id,
+                    common_name,
+                    scientific_name,
+                    current_quantity,
+                    origin,
+                    status
+                FROM animals
+                WHERE animal_id = ?
+                """;
+
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    animalId
+            );
+
+            try (
+                    ResultSet result =
+                            statement.executeQuery()
+            ) {
+
+                if (result.next()) {
+
+                    Animal animal =
+                            new Animal();
+
+                    animal.setAnimalId(
+                            result.getInt("animal_id")
+                    );
+
+                    animal.setSpeciesId(
+                            result.getInt("species_id")
+                    );
+
+                    animal.setCommonName(
+                            result.getString("common_name")
+                    );
+
+                    animal.setScientificName(
+                            result.getString("scientific_name")
+                    );
+
+                    animal.setCurrentQuantity(
+                            result.getInt("current_quantity")
+                    );
+
+                    animal.setOrigin(
+                            result.getString("origin")
+                    );
+
+                    animal.setStatus(
+                            result.getString("status")
+                    );
+
+                    return animal;
+                }
+            }
+
+        } catch (Exception exception) {
+
+            throw new RuntimeException(
+                    "Error finding animal.",
+                    exception
+            );
+        }
+
+        return null;
     }
 }

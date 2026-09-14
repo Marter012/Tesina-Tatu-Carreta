@@ -18,12 +18,12 @@ public class EnclosureDAO {
     public void add(Enclosure enclosure) {
 
         String sql = """
-                INSERT INTO habitaculos (
-                    nombre,
+                INSERT INTO enclosures (
+                    name,
                     sector,
-                    capacidad,
-                    estado,
-                    observaciones
+                    capacity,
+                    status,
+                    observations
                 )
                 VALUES (?, ?, ?, ?, ?)
                 """;
@@ -83,7 +83,6 @@ public class EnclosureDAO {
         }
     }
 
-
     // =========================
     // LIST
     // =========================
@@ -95,14 +94,14 @@ public class EnclosureDAO {
 
         String sql = """
                 SELECT
-                    id_habitaculo,
-                    nombre,
+                    enclosure_id,
+                    name,
                     sector,
-                    capacidad,
-                    estado,
-                    observaciones
-                FROM habitaculos
-                ORDER BY nombre
+                    capacity,
+                    status,
+                    observations
+                FROM enclosures
+                ORDER BY name
                 """;
 
         try (Connection connection =
@@ -119,13 +118,13 @@ public class EnclosureDAO {
 
                 enclosure.setEnclosureId(
                         result.getInt(
-                                "id_habitaculo"
+                                "enclosure_id"
                         )
                 );
 
                 enclosure.setName(
                         result.getString(
-                                "nombre"
+                                "name"
                         )
                 );
 
@@ -137,7 +136,7 @@ public class EnclosureDAO {
 
                 int capacity =
                         result.getInt(
-                                "capacidad"
+                                "capacity"
                         );
 
                 if (result.wasNull()) {
@@ -153,13 +152,13 @@ public class EnclosureDAO {
 
                 enclosure.setStatus(
                         result.getString(
-                                "estado"
+                                "status"
                         )
                 );
 
                 enclosure.setObservations(
                         result.getString(
-                                "observaciones"
+                                "observations"
                         )
                 );
 
@@ -178,6 +177,100 @@ public class EnclosureDAO {
         return enclosures;
     }
 
+    // =========================
+    // LIST ACTIVE
+    // =========================
+
+    public List<Enclosure> listActive() {
+
+        List<Enclosure> enclosures =
+                new ArrayList<>();
+
+        String sql = """
+                SELECT
+                    enclosure_id,
+                    name,
+                    sector,
+                    capacity,
+                    status,
+                    observations
+                FROM enclosures
+                WHERE status = 'Active'
+                ORDER BY name
+                """;
+
+        try (Connection connection =
+                     SQLiteConnection.connect();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql);
+             ResultSet result =
+                     statement.executeQuery()) {
+
+            while (result.next()) {
+
+                Enclosure enclosure =
+                        new Enclosure();
+
+                enclosure.setEnclosureId(
+                        result.getInt(
+                                "enclosure_id"
+                        )
+                );
+
+                enclosure.setName(
+                        result.getString(
+                                "name"
+                        )
+                );
+
+                enclosure.setSector(
+                        result.getString(
+                                "sector"
+                        )
+                );
+
+                int capacity =
+                        result.getInt(
+                                "capacity"
+                        );
+
+                if (result.wasNull()) {
+
+                    enclosure.setCapacity(null);
+
+                } else {
+
+                    enclosure.setCapacity(
+                            capacity
+                    );
+                }
+
+                enclosure.setStatus(
+                        result.getString(
+                                "status"
+                        )
+                );
+
+                enclosure.setObservations(
+                        result.getString(
+                                "observations"
+                        )
+                );
+
+                enclosures.add(enclosure);
+            }
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Error listing active enclosures."
+            );
+
+            System.out.println(e.getMessage());
+        }
+
+        return enclosures;
+    }
 
     // =========================
     // UPDATE
@@ -186,14 +279,14 @@ public class EnclosureDAO {
     public void update(Enclosure enclosure) {
 
         String sql = """
-                UPDATE habitaculos
+                UPDATE enclosures
                 SET
-                    nombre = ?,
+                    name = ?,
                     sector = ?,
-                    capacidad = ?,
-                    estado = ?,
-                    observaciones = ?
-                WHERE id_habitaculo = ?
+                    capacity = ?,
+                    status = ?,
+                    observations = ?
+                WHERE enclosure_id = ?
                 """;
 
         try (Connection connection =
@@ -257,6 +350,38 @@ public class EnclosureDAO {
         }
     }
 
+    // =========================
+    // UPDATE STATUS
+    // =========================
+
+    public void updateStatus(
+            Connection connection,
+            int enclosureId,
+            String status)
+            throws Exception {
+
+        String sql = """
+                UPDATE enclosures
+                SET status = ?
+                WHERE enclosure_id = ?
+                """;
+
+        try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+            statement.setString(
+                    1,
+                    status
+            );
+
+            statement.setInt(
+                    2,
+                    enclosureId
+            );
+
+            statement.executeUpdate();
+        }
+    }
 
     // =========================
     // DELETE
@@ -265,8 +390,8 @@ public class EnclosureDAO {
     public void delete(int enclosureId) {
 
         String sql = """
-                DELETE FROM habitaculos
-                WHERE id_habitaculo = ?
+                DELETE FROM enclosures
+                WHERE enclosure_id = ?
                 """;
 
         try (Connection connection =

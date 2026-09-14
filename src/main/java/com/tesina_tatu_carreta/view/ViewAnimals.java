@@ -1,822 +1,2187 @@
 package com.tesina_tatu_carreta.view;
 
 import com.tesina_tatu_carreta.dao.AnimalDAO;
+import com.tesina_tatu_carreta.dao.AnimalHoldingDAO;
 import com.tesina_tatu_carreta.dao.SpeciesDAO;
 import com.tesina_tatu_carreta.model.Animal;
+import com.tesina_tatu_carreta.model.AnimalHolding;
+import com.tesina_tatu_carreta.model.AnimalInventorySummary;
 import com.tesina_tatu_carreta.model.Species;
+import com.tesina_tatu_carreta.service.AnimalInventoryService;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import javafx.util.StringConverter;
+
+import java.util.List;
 
 public class ViewAnimals {
 
-        private final AnimalDAO animalDAO = new AnimalDAO();
-
-        private final TableView<Animal> table = new TableView<>();
-
-        private final ComboBox<Species> comboEspecie = new ComboBox<>();
-
-        private final TextField txtNombreVulgar = new TextField();
-
-        private final TextField txtNombreCientifico = new TextField();
-
-        private final TextField txtCantidad = new TextField();
-
-        private final ComboBox<String> comboOrigen = new ComboBox<>();
-
-        private final ComboBox<String> comboEstado = new ComboBox<>();
-
-        private final String COLOR_FONDO = "#F4F2EA";
-
-        private final String COLOR_VERDE = "#23452C";
-
-        public void show() {
-
-                Stage view = new Stage();
-
-                // =====================================
-                // HEADER
-                // =====================================
-
-                Label ruta = new Label(
-                                "Home / Animal Management");
-
-                ruta.setStyle(
-                                "-fx-font-size: 11px;" +
-                                                "-fx-text-fill: #8A918E;");
-
-                Label titulo = new Label(
-                                "Animal Management");
-
-                titulo.setStyle(
-                                "-fx-font-size: 28px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: " + COLOR_VERDE + ";");
-
-                Label descripcion = new Label(
-                                "Manage the animals registered in the reserve.");
-
-                descripcion.setStyle(
-                                "-fx-font-size: 13px;" +
-                                                "-fx-text-fill: #727A76;");
-
-                VBox encabezado = new VBox(6);
-
-                encabezado.getChildren().addAll(
-                                ruta,
-                                titulo,
-                                descripcion);
-
-                // =====================================
-                // CONFIGURE FIELDS
-                // =====================================
-
-                comboEspecie.setPromptText(
-                                "Select species");
-
-                txtNombreVulgar.setPromptText(
-                                "E.g.: Blue-fronted Amazon");
-
-                txtNombreCientifico.setPromptText(
-                                "E.g.: Amazona aestiva");
-
-                txtCantidad.setPromptText(
-                                "E.g.: 1");
-
-                comboOrigen.getItems().addAll(
-                                "Admission",
-                                "Already existing in the reserve");
-
-                comboOrigen.setValue(
-                                "Admission");
-
-                comboEstado.getItems().addAll(
-                                "Active",
-                                "Inactive");
-
-                comboEstado.setValue(
-                                "Active");
-
-                cargarEspecies();
-
-                // =====================================
-                // FORM
-                // =====================================
-
-                Label tituloFormulario = new Label("Animal Information");
-
-                tituloFormulario.setStyle(
-                                "-fx-font-size: 18px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: " + COLOR_VERDE + ";");
-
-                GridPane formulario = new GridPane();
-
-                formulario.setHgap(20);
-                formulario.setVgap(15);
-
-                formulario.setPadding(
-                                new Insets(20, 0, 0, 0));
-
-                ColumnConstraints columna1 = new ColumnConstraints();
-
-                columna1.setPercentWidth(50);
-
-                ColumnConstraints columna2 = new ColumnConstraints();
-
-                columna2.setPercentWidth(50);
-
-                formulario.getColumnConstraints().addAll(
-                                columna1,
-                                columna2);
-
-                // SPECIES
-
-                formulario.add(
-                                crearLabelCampo("Species"),
-                                0,
-                                0);
-
-                formulario.add(
-                                comboEspecie,
-                                0,
-                                1);
-
-                // COMMON NAME
-
-                formulario.add(
-                                crearLabelCampo("Common name"),
-                                1,
-                                0);
-
-                formulario.add(
-                                txtNombreVulgar,
-                                1,
-                                1);
-
-                // SCIENTIFIC NAME
-
-                formulario.add(
-                                crearLabelCampo("Scientific name"),
-                                0,
-                                2);
-
-                formulario.add(
-                                txtNombreCientifico,
-                                0,
-                                3);
-
-                // QUANTITY
-
-                formulario.add(
-                                crearLabelCampo(
-                                                "Total registered quantity"),
-                                1,
-                                2);
-
-                formulario.add(
-                                txtCantidad,
-                                1,
-                                3);
-
-                // ORIGIN
-
-                formulario.add(
-                                crearLabelCampo("Origin"),
-                                0,
-                                4);
-
-                formulario.add(
-                                comboOrigen,
-                                0,
-                                5);
-
-                // STATUS
-
-                formulario.add(
-                                crearLabelCampo("Status"),
-                                1,
-                                4);
-
-                formulario.add(
-                                comboEstado,
-                                1,
-                                5);
-
-                configurarCampo(comboEspecie);
-                configurarCampo(txtNombreVulgar);
-                configurarCampo(txtNombreCientifico);
-                configurarCampo(txtCantidad);
-                configurarCampo(comboOrigen);
-                configurarCampo(comboEstado);
-
-                // =====================================
-                // BUTTONS
-                // =====================================
-
-                Button btnAgregar = crearBotonPrincipal("ADD");
-
-                Button btnModificar = crearBotonSecundario("EDIT");
-
-                Button btnEliminar = crearBotonEliminar("DELETE");
-
-                Button btnLimpiar = crearBotonSecundario("CLEAR");
-
-                HBox botones = new HBox(12);
-
-                botones.setAlignment(
-                                Pos.CENTER_RIGHT);
-
-                botones.setPadding(
-                                new Insets(20, 0, 0, 0));
-
-                botones.getChildren().addAll(
-                                btnLimpiar,
-                                btnEliminar,
-                                btnModificar,
-                                btnAgregar);
-
-                // =====================================
-                // FORM CARD
-                // =====================================
-
-                VBox tarjetaFormulario = new VBox();
-
-                tarjetaFormulario.setPadding(
-                                new Insets(25));
-
-                tarjetaFormulario.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 14;" +
-                                                "-fx-border-color: #DDDAD1;" +
-                                                "-fx-border-radius: 14;");
-
-                tarjetaFormulario.getChildren().addAll(
-                                tituloFormulario,
-                                formulario,
-                                botones);
-
-                // =====================================
-                // TABLE
-                // =====================================
-
-                Label tituloTabla = new Label(
-                                "Registered Animals");
-
-                tituloTabla.setStyle(
-                                "-fx-font-size: 19px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: " + COLOR_VERDE + ";");
-
-                // ID
-
-                TableColumn<Animal, Integer> columnaId = new TableColumn<>("ID");
-
-                columnaId.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "idAnimal"));
-
-                // COMMON NAME
-
-                TableColumn<Animal, String> columnaVulgar = new TableColumn<>(
-                                "Common name");
-
-                columnaVulgar.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "nombreVulgar"));
-
-                // SCIENTIFIC NAME
-
-                TableColumn<Animal, String> columnaCientifico = new TableColumn<>(
-                                "Scientific name");
-
-                columnaCientifico.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "nombreCientifico"));
-
-                // QUANTITY
-
-                TableColumn<Animal, Integer> columnaCantidad = new TableColumn<>(
-                                "Quantity");
-
-                columnaCantidad.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "cantidadActual"));
-
-                // ORIGIN
-
-                TableColumn<Animal, String> columnaOrigen = new TableColumn<>(
-                                "Origin");
-
-                columnaOrigen.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "origen"));
-
-                // STATUS
-
-                TableColumn<Animal, String> columnaEstado = new TableColumn<>(
-                                "Status");
-
-                columnaEstado.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "estado"));
-
-                table.getColumns().add(columnaId);
-                table.getColumns().add(columnaVulgar);
-                table.getColumns().add(columnaCientifico);
-                table.getColumns().add(columnaCantidad);
-                table.getColumns().add(columnaOrigen);
-                table.getColumns().add(columnaEstado);
-
-                table.setColumnResizePolicy(
-                                TableView.CONSTRAINED_RESIZE_POLICY);
-
-                table.setPrefHeight(330);
-
-                table.setMinHeight(330);
-
-                table.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-border-color: #E1E1DC;");
-
-                VBox seccionTabla = new VBox(18);
-
-                seccionTabla.setPadding(
-                                new Insets(25));
-
-                seccionTabla.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 14;" +
-                                                "-fx-border-color: #DDDAD1;" +
-                                                "-fx-border-radius: 14;");
-
-                seccionTabla.getChildren().addAll(
-                                tituloTabla,
-                                table);
-
-                cargarAnimales();
-
-                // =====================================
-                // SELECT ANIMAL
-                // =====================================
-
+    private final AnimalDAO animalDAO =
+            new AnimalDAO();
+
+    private final SpeciesDAO speciesDAO =
+            new SpeciesDAO();
+
+    private final AnimalHoldingDAO holdingDAO =
+            new AnimalHoldingDAO();
+
+    private final AnimalInventoryService inventoryService =
+            new AnimalInventoryService();
+
+    private final TableView<AnimalInventorySummary>
+            table =
+            new TableView<>();
+
+    private final ObservableList<
+            AnimalInventorySummary>
+            inventory =
+            FXCollections.observableArrayList();
+
+    private final ObservableList<Animal>
+            animals =
+            FXCollections.observableArrayList();
+
+    private final ObservableList<Species>
+            species =
+            FXCollections.observableArrayList();
+
+    private VBox contentContainer;
+
+    private Button informationButton;
+    private Button registeredButton;
+
+    private ComboBox<Species> speciesComboBox;
+    private TextField commonNameField;
+    private TextField scientificNameField;
+    private ComboBox<String> originComboBox;
+    private ComboBox<String> statusComboBox;
+
+    private Animal selectedAnimal;
+
+    public Parent getView() {
+        return createView();
+    }
+
+    public Parent createView() {
+
+        Label breadcrumb =
+                new Label(
+                        "Inicio / Gestión de animales"
+                );
+
+        breadcrumb.setStyle(
+                "-fx-font-size: 12px;" +
+                "-fx-text-fill: #8A918E;"
+        );
+
+        Label title =
+                new Label(
+                        "Gestión de animales"
+                );
+
+        title.setStyle(
+                "-fx-font-size: 28px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #23452C;"
+        );
+
+        Label description =
+                new Label(
+                        "Consulte y administre los animales que se encuentran actualmente en la reserva."
+                );
+
+        description.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-text-fill: #727A76;"
+        );
+
+        VBox header =
+                new VBox(
+                        7,
+                        breadcrumb,
+                        title,
+                        description
+                );
+
+        informationButton =
+                createSectionButton(
+                        "Información del animal",
+                        true
+                );
+
+        registeredButton =
+                createSectionButton(
+                        "Inventario actual",
+                        false
+                );
+
+        HBox navigation =
+                new HBox(
+                        10,
+                        informationButton,
+                        registeredButton
+                );
+
+        navigation.setAlignment(
+                Pos.CENTER
+        );
+
+        navigation.setPadding(
+                new Insets(8)
+        );
+
+        informationButton.setOnAction(
+                event -> {
+                    selectSection(
+                            informationButton
+                    );
+                    showInformationSection();
+                }
+        );
+
+        registeredButton.setOnAction(
+                event -> {
+                    selectSection(
+                            registeredButton
+                    );
+                    showInventorySection();
+                }
+        );
+
+        contentContainer =
+                new VBox();
+
+        contentContainer.setFillWidth(
+                true
+        );
+
+        contentContainer.getChildren().add(
+                createInformationSection()
+        );
+
+        VBox content =
+                new VBox(22);
+
+        content.setPadding(
+                new Insets(
+                        35,
+                        40,
+                        35,
+                        40
+                )
+        );
+
+        content.setStyle(
+                "-fx-background-color: #F4F2EA;"
+        );
+
+        content.getChildren().addAll(
+                header,
+                navigation,
+                contentContainer
+        );
+
+        VBox.setVgrow(
+                contentContainer,
+                Priority.ALWAYS
+        );
+
+        ScrollPane scrollPane =
+                new ScrollPane(content);
+
+        scrollPane.setFitToWidth(
+                true
+        );
+
+        scrollPane.setHbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER
+        );
+
+        scrollPane.setStyle(
+                "-fx-background-color: #F4F2EA;"
+        );
+
+        return scrollPane;
+    }
+
+    private VBox createInformationSection() {
+
+        speciesComboBox =
+                new ComboBox<>();
+
+        commonNameField =
+                new TextField();
+
+        scientificNameField =
+                new TextField();
+
+        originComboBox =
+                new ComboBox<>();
+
+        statusComboBox =
+                new ComboBox<>();
+
+        loadSpecies();
+
+        speciesComboBox.setPromptText(
+                "Seleccione una especie"
+        );
+
+        commonNameField.setPromptText(
+                "Nombre común"
+        );
+
+        scientificNameField.setPromptText(
+                "Nombre científico"
+        );
+
+        originComboBox.getItems().setAll(
+                "Admission",
+                "Already existing in the reserve"
+        );
+
+        statusComboBox.getItems().setAll(
+                "Active",
+                "Inactive"
+        );
+
+        originComboBox.setValue(
+                "Admission"
+        );
+
+        statusComboBox.setValue(
+                "Active"
+        );
+
+        configureOriginConverter();
+        configureStatusConverter();
+
+        configureControl(
+                speciesComboBox
+        );
+
+        configureControl(
+                commonNameField
+        );
+
+        configureControl(
+                scientificNameField
+        );
+
+        configureControl(
+                originComboBox
+        );
+
+        configureControl(
+                statusComboBox
+        );
+
+        GridPane form =
+                new GridPane();
+
+        form.setHgap(20);
+        form.setVgap(15);
+
+        form.add(
+                label("Especie"),
+                0,
+                0
+        );
+
+        form.add(
+                speciesComboBox,
+                0,
+                1
+        );
+
+        form.add(
+                label("Nombre común"),
+                1,
+                0
+        );
+
+        form.add(
+                commonNameField,
+                1,
+                1
+        );
+
+        form.add(
+                label("Nombre científico"),
+                0,
+                2
+        );
+
+        form.add(
+                scientificNameField,
+                0,
+                3
+        );
+
+        form.add(
+                label("Origen"),
+                1,
+                2
+        );
+
+        form.add(
+                originComboBox,
+                1,
+                3
+        );
+
+        form.add(
+                label("Estado"),
+                0,
+                4
+        );
+
+        form.add(
+                statusComboBox,
+                0,
+                5
+        );
+
+        GridPane.setHgrow(
+                speciesComboBox,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                commonNameField,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                scientificNameField,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                originComboBox,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                statusComboBox,
+                Priority.ALWAYS
+        );
+
+        Button clearButton =
+                secondaryButton(
+                        "LIMPIAR"
+                );
+
+        Button deleteButton =
+                deleteButton(
+                        "ELIMINAR"
+                );
+
+        Button editButton =
+                secondaryButton(
+                        "EDITAR"
+                );
+
+        Button addButton =
+                primaryButton(
+                        "AGREGAR"
+                );
+
+        clearButton.setOnAction(
+                event -> clearFields()
+        );
+
+        deleteButton.setOnAction(
+                event -> deleteAnimal()
+        );
+
+        editButton.setOnAction(
+                event -> updateAnimal()
+        );
+
+        addButton.setOnAction(
+                event -> addAnimal()
+        );
+
+        HBox actions =
+                new HBox(
+                        10,
+                        clearButton,
+                        deleteButton,
+                        editButton,
+                        addButton
+                );
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        Label help =
+                new Label(
+                        "Seleccione un animal de la tabla de inventario para consultar sus datos."
+                );
+
+        help.setStyle(
+                "-fx-font-size: 12px;" +
+                "-fx-text-fill: #777E7A;"
+        );
+
+        VBox card =
+                new VBox(
+                        20,
+                        title(
+                                "Información del animal"
+                        ),
+                        help,
+                        form,
+                        actions
+                );
+
+        card.setPadding(
+                new Insets(25)
+        );
+
+        card.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: #DDDAD1;" +
+                "-fx-border-radius: 14;"
+        );
+
+        return new VBox(card);
+    }
+
+    private VBox createInventorySection() {
+
+        Label title =
+                title(
+                        "Inventario actual"
+                );
+
+        Label description =
+                new Label(
+                        "Aquí puede consultar cuántos animales hay actualmente en cada lugar de la reserva."
+                );
+
+        description.setStyle(
+                "-fx-font-size: 13px;" +
+                "-fx-text-fill: #777E7A;"
+        );
+
+        createInventoryColumns();
+
+        loadInventory();
+
+        table.setItems(
+                inventory
+        );
+
+        table.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY
+        );
+
+        table.setPrefHeight(
+                400
+        );
+
+        table.setFixedCellSize(
+                42
+        );
+
+        table.setPlaceholder(
+                new Label(
+                        "No hay animales registrados en el inventario actual."
+                )
+        );
+
+        table.getSelectionModel()
+                .selectedItemProperty()
+                .addListener(
+                        (observable, oldValue, newValue) ->
+                                handleInventorySelection(
+                                        newValue
+                                )
+                );
+
+        HBox summary =
+                createInventorySummary();
+
+        Button refresh =
+                secondaryButton(
+                        "ACTUALIZAR"
+                );
+
+        Button transfer =
+                primaryButton(
+                        "TRASLADAR"
+                );
+
+        Button death =
+                deleteButton(
+                        "REGISTRAR MUERTE"
+                );
+
+        Button exit =
+                secondaryButton(
+                        "REGISTRAR SALIDA"
+                );
+
+        refresh.setOnAction(
+                event -> loadInventory()
+        );
+
+        transfer.setOnAction(
+                event -> openMovementDialog(
+                        "TRANSFER"
+                )
+        );
+
+        death.setOnAction(
+                event -> openMovementDialog(
+                        "DEATH"
+                )
+        );
+
+        exit.setOnAction(
+                event -> openMovementDialog(
+                        "EXIT"
+                )
+        );
+
+        HBox actions =
+                new HBox(
+                        10,
+                        refresh,
+                        transfer,
+                        death,
+                        exit
+                );
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        Label selectionHelp =
+                new Label(
+                        "Seleccione un animal para registrar un traslado, una muerte o una salida."
+                );
+
+        selectionHelp.setStyle(
+                "-fx-font-size: 12px;" +
+                "-fx-text-fill: #777E7A;"
+        );
+
+        VBox card =
+                new VBox(
+                        18,
+                        title,
+                        description,
+                        summary,
+                        table,
+                        selectionHelp,
+                        actions
+                );
+
+        card.setPadding(
+                new Insets(25)
+        );
+
+        card.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: #DDDAD1;" +
+                "-fx-border-radius: 14;"
+        );
+
+        return card;
+    }
+
+    private HBox createInventorySummary() {
+
+        int permanent =
+                holdingDAO.getTotalQuantity(
+                        AnimalInventoryService.PERMANENT
+                );
+
+        int quarantine =
+                holdingDAO.getTotalQuantity(
+                        AnimalInventoryService.QUARANTINE
+                );
+
+        int total =
+                permanent + quarantine;
+
+        Label totalTitle =
+                new Label(
+                        "TOTAL ACTUAL"
+                );
+
+        Label totalValue =
+                new Label(
+                        String.valueOf(total)
+                );
+
+        Label quarantineTitle =
+                new Label(
+                        "CUARENTENA"
+                );
+
+        Label quarantineValue =
+                new Label(
+                        String.valueOf(quarantine)
+                );
+
+        Label permanentTitle =
+                new Label(
+                        "PERMANENTE"
+                );
+
+        Label permanentValue =
+                new Label(
+                        String.valueOf(permanent)
+                );
+
+        styleSummaryTitle(
+                totalTitle
+        );
+
+        styleSummaryValue(
+                totalValue
+        );
+
+        styleSummaryTitle(
+                quarantineTitle
+        );
+
+        styleSummaryValue(
+                quarantineValue
+        );
+
+        styleSummaryTitle(
+                permanentTitle
+        );
+
+        styleSummaryValue(
+                permanentValue
+        );
+
+        VBox totalBox =
+                createSummaryBox(
+                        totalTitle,
+                        totalValue
+                );
+
+        VBox quarantineBox =
+                createSummaryBox(
+                        quarantineTitle,
+                        quarantineValue
+                );
+
+        VBox permanentBox =
+                createSummaryBox(
+                        permanentTitle,
+                        permanentValue
+                );
+
+        HBox box =
+                new HBox(
+                        25,
+                        totalBox,
+                        quarantineBox,
+                        permanentBox
+                );
+
+        box.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        box.setPadding(
+                new Insets(12)
+        );
+
+        box.setStyle(
+                "-fx-background-color: #E8EEE9;" +
+                "-fx-background-radius: 10;"
+        );
+
+        return box;
+    }
+
+    private VBox createSummaryBox(
+            Label title,
+            Label value) {
+
+        VBox box =
+                new VBox(
+                        3,
+                        title,
+                        value
+                );
+
+        box.setAlignment(
+                Pos.CENTER
+        );
+
+        box.setMinWidth(
+                140
+        );
+
+        return box;
+    }
+
+    private void styleSummaryTitle(
+            Label label) {
+
+        label.setStyle(
+                "-fx-font-size: 11px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #607066;"
+        );
+    }
+
+    private void styleSummaryValue(
+            Label label) {
+
+        label.setStyle(
+                "-fx-font-size: 24px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #23452C;"
+        );
+    }
+
+    private void createInventoryColumns() {
+
+        table.getColumns().clear();
+
+        TableColumn<
+                AnimalInventorySummary,
+                String> animalColumn =
+                new TableColumn<>(
+                        "Animal"
+                );
+
+        animalColumn.setCellValueFactory(
+                new PropertyValueFactory<>(
+                        "commonName"
+                )
+        );
+
+        TableColumn<
+                AnimalInventorySummary,
+                String> scientificColumn =
+                new TableColumn<>(
+                        "Nombre científico"
+                );
+
+        scientificColumn.setCellValueFactory(
+                new PropertyValueFactory<>(
+                        "scientificName"
+                )
+        );
+
+        TableColumn<
+                AnimalInventorySummary,
+                Integer> permanentColumn =
+                new TableColumn<>(
+                        "Permanente"
+                );
+
+        permanentColumn.setCellValueFactory(
+                new PropertyValueFactory<>(
+                        "permanentQuantity"
+                )
+        );
+
+        TableColumn<
+                AnimalInventorySummary,
+                Integer> quarantineColumn =
+                new TableColumn<>(
+                        "Cuarentena"
+                );
+
+        quarantineColumn.setCellValueFactory(
+                new PropertyValueFactory<>(
+                        "quarantineQuantity"
+                )
+        );
+
+        TableColumn<
+                AnimalInventorySummary,
+                Integer> totalColumn =
+                new TableColumn<>(
+                        "TOTAL"
+                );
+
+        totalColumn.setCellValueFactory(
+                new PropertyValueFactory<>(
+                        "totalQuantity"
+                )
+        );
+
+        TableColumn<
+                AnimalInventorySummary,
+                String> statusColumn =
+                new TableColumn<>(
+                        "Estado"
+                );
+
+        statusColumn.setCellValueFactory(
+                cellData -> {
+
+                    String value =
+                            cellData
+                                    .getValue()
+                                    .getStatus();
+
+                    return new SimpleStringProperty(
+                            translateStatus(
+                                    value
+                            )
+                    );
+                }
+        );
+
+        table.getColumns().addAll(
+                animalColumn,
+                scientificColumn,
+                permanentColumn,
+                quarantineColumn,
+                totalColumn,
+                statusColumn
+        );
+    }
+
+    private void handleInventorySelection(
+            AnimalInventorySummary selected) {
+
+        if (selected == null) {
+            return;
+        }
+
+        Animal animal =
+                animalDAO.findById(
+                        selected.getAnimalId()
+                );
+
+        if (animal == null) {
+            return;
+        }
+
+        selectedAnimal = animal;
+
+        loadAnimalIntoFields(
+                animal
+        );
+    }
+
+    private void loadAnimalIntoFields(
+            Animal animal) {
+
+        Species selectedSpecies = null;
+
+        for (Species item : species) {
+
+            if (item.getSpeciesId()
+                    == animal.getSpeciesId()) {
+
+                selectedSpecies = item;
+                break;
+            }
+        }
+
+        speciesComboBox.setValue(
+                selectedSpecies
+        );
+
+        commonNameField.setText(
+                safeValue(
+                        animal.getCommonName()
+                )
+        );
+
+        scientificNameField.setText(
+                safeValue(
+                        animal.getScientificName()
+                )
+        );
+
+        originComboBox.setValue(
+                safeValue(
+                        animal.getOrigin()
+                )
+        );
+
+        statusComboBox.setValue(
+                safeValue(
+                        animal.getStatus()
+                )
+        );
+    }
+
+    private void openMovementDialog(
+            String movementType) {
+
+        AnimalInventorySummary selected =
                 table.getSelectionModel()
-                                .selectedItemProperty()
-                                .addListener(
-                                                (
-                                                                observable,
-                                                                anterior,
-                                                                seleccionado) -> {
+                        .getSelectedItem();
 
-                                                        if (seleccionado != null) {
+        if (selected == null) {
 
-                                                                txtNombreVulgar.setText(
-                                                                                seleccionado
-                                                                                                .getCommonName());
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Seleccione un animal",
+                    "Primero debe seleccionar el animal sobre el que desea realizar la operación."
+            );
 
-                                                                txtNombreCientifico.setText(
-                                                                                seleccionado
-                                                                                                .getScientificName());
+            return;
+        }
 
-                                                                txtCantidad.setText(
-                                                                                String.valueOf(
-                                                                                                seleccionado
-                                                                                                                .getCurrentQuantity()));
+        List<AnimalHolding> holdings =
+                holdingDAO.listByAnimal(
+                        selected.getAnimalId()
+                );
 
-                                                                comboOrigen.setValue(
-                                                                                seleccionado
-                                                                                                .getOrigin());
+        if (holdings.isEmpty()) {
 
-                                                                comboEstado.setValue(
-                                                                                seleccionado
-                                                                                                .getStatus());
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin animales disponibles",
+                    "Este animal no tiene ejemplares disponibles para realizar esta operación."
+            );
 
-                                                                for (Species especie : comboEspecie.getItems()) {
+            return;
+        }
 
-                                                                        if (especie.getSpeciesId() == seleccionado
-                                                                                        .getSpeciesId()) {
+        ComboBox<AnimalHolding> holdingComboBox =
+                new ComboBox<>(
+                        FXCollections.observableArrayList(
+                                holdings
+                        )
+                );
 
-                                                                                comboEspecie.setValue(
-                                                                                                especie);
+        holdingComboBox.setMaxWidth(
+                Double.MAX_VALUE
+        );
 
-                                                                                break;
-                                                                        }
-                                                                }
-                                                        }
-                                                });
+        holdingComboBox.setPrefHeight(
+                42
+        );
 
-                // =====================================
-                // ADD
-                // =====================================
+        holdingComboBox.setConverter(
+                new StringConverter<>() {
 
-                btnAgregar.setOnAction(e -> {
+                    @Override
+                    public String toString(
+                            AnimalHolding holding) {
 
-                        if (comboEspecie.getValue() == null
-                                        || txtNombreVulgar
-                                                        .getText()
-                                                        .isBlank()
-                                        || txtNombreCientifico
-                                                        .getText()
-                                                        .isBlank()
-                                        || txtCantidad
-                                                        .getText()
-                                                        .isBlank()
-                                        || comboOrigen
-                                                        .getValue() == null
-                                        || comboEstado
-                                                        .getValue() == null) {
+                        if (holding == null) {
+                            return "";
+                        }
 
+                        return formatHolding(
+                                holding
+                        );
+                    }
+
+                    @Override
+                    public AnimalHolding fromString(
+                            String value) {
+
+                        return null;
+                    }
+                }
+        );
+
+        TextField quantityField =
+                new TextField();
+
+        quantityField.setPromptText(
+                "Ingrese la cantidad"
+        );
+
+        quantityField.setPrefHeight(
+                42
+        );
+
+        TextField destinationField =
+                new TextField();
+
+        destinationField.setPromptText(
+                "Ejemplo: Reserva Provincial..."
+        );
+
+        destinationField.setPrefHeight(
+                42
+        );
+
+        TextArea observationsField =
+                new TextArea();
+
+        observationsField.setPromptText(
+                "Escriba una observación si es necesario..."
+        );
+
+        observationsField.setWrapText(
+                true
+        );
+
+        observationsField.setPrefRowCount(
+                4
+        );
+
+        Label availableValue =
+                new Label(
+                        "Seleccione una ubicación"
+                );
+
+        availableValue.setStyle(
+                "-fx-font-size: 15px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #23452C;"
+        );
+
+        holdingComboBox.setOnAction(
+                event -> {
+
+                    AnimalHolding holding =
+                            holdingComboBox.getValue();
+
+                    if (holding == null) {
+
+                        availableValue.setText(
+                                "Seleccione una ubicación"
+                        );
+
+                        return;
+                    }
+
+                    availableValue.setText(
+                            "Hay "
+                                    + holding.getQuantity()
+                                    + " animales disponibles"
+                    );
+                }
+        );
+
+        VBox content =
+                new VBox(
+                        13
+                );
+
+        Label animalLabel =
+                new Label(
+                        "Animal"
+                );
+
+        Label animalValue =
+                new Label(
+                        selected.getCommonName()
+                );
+
+        animalValue.setStyle(
+                "-fx-font-size: 17px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #23452C;"
+        );
+
+        content.getChildren().addAll(
+                animalLabel,
+                animalValue,
+                new Label(
+                        "¿De dónde se retiran los animales?"
+                ),
+                holdingComboBox,
+                new Label(
+                        "Cantidad disponible"
+                ),
+                availableValue,
+                new Label(
+                        "¿Cuántos animales desea registrar?"
+                ),
+                quantityField
+        );
+
+        ComboBox<String> target =
+                null;
+
+        if ("TRANSFER".equals(movementType)) {
+
+            target =
+                    new ComboBox<>();
+
+            target.getItems().addAll(
+                    AnimalInventoryService.QUARANTINE,
+                    AnimalInventoryService.PERMANENT
+            );
+
+            target.setConverter(
+                    new StringConverter<>() {
+
+                        @Override
+                        public String toString(
+                                String value) {
+
+                            return translateLocation(
+                                    value
+                            );
+                        }
+
+                        @Override
+                        public String fromString(
+                                String value) {
+
+                            return value;
+                        }
+                    }
+            );
+
+            target.setMaxWidth(
+                    Double.MAX_VALUE
+            );
+
+            target.setPrefHeight(
+                    42
+            );
+
+            content.getChildren().addAll(
+                    new Label(
+                            "¿A dónde se trasladan?"
+                    ),
+                    target
+            );
+
+        } else if ("EXIT".equals(movementType)) {
+
+            content.getChildren().addAll(
+                    new Label(
+                            "¿A qué lugar salen?"
+                    ),
+                    destinationField
+            );
+        }
+
+        content.getChildren().addAll(
+                new Label(
+                        "Observaciones"
+                ),
+                observationsField
+        );
+
+        Button save =
+                primaryButton(
+                        movementButtonText(
+                                movementType
+                        )
+                );
+
+        Button cancel =
+                secondaryButton(
+                        "CANCELAR"
+                );
+
+        HBox buttons =
+                new HBox(
+                        10,
+                        cancel,
+                        save
+                );
+
+        buttons.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        VBox box =
+                new VBox(
+                        18,
+                        content,
+                        buttons
+                );
+
+        box.setPadding(
+                new Insets(10)
+        );
+
+        Alert alert =
+                new Alert(
+                        Alert.AlertType.NONE
+                );
+
+        alert.setTitle(
+                translateMovementType(
+                        movementType
+                )
+        );
+
+        alert.setHeaderText(
+                selected.getCommonName()
+        );
+
+        alert.getDialogPane()
+                .setContent(box);
+
+        cancel.setOnAction(
+                event -> alert.close()
+        );
+
+        ComboBox<String> finalTarget =
+                target;
+
+        save.setOnAction(
+                event -> {
+
+                    try {
+
+                        AnimalHolding holding =
+                                holdingComboBox.getValue();
+
+                        if (holding == null) {
+
+                            throw new IllegalArgumentException(
+                                    "Debe seleccionar de dónde se retiran los animales."
+                            );
+                        }
+
+                        int quantity =
+                                parseQuantity(
+                                        quantityField
+                                                .getText()
+                                                .trim()
+                                );
+
+                        if (quantity
+                                > holding.getQuantity()) {
+
+                            throw new IllegalArgumentException(
+                                    "La cantidad indicada supera la cantidad disponible."
+                            );
+                        }
+
+                        if ("TRANSFER".equals(
+                                movementType)) {
+
+                            if (finalTarget == null
+                                    || finalTarget.getValue()
+                                    == null) {
+
+                                throw new IllegalArgumentException(
+                                        "Debe seleccionar el lugar de destino."
+                                );
+                            }
+
+                            String targetLocation =
+                                    finalTarget.getValue();
+
+                            if (holding.getLocationType()
+                                    .equals(
+                                            targetLocation
+                                    )) {
+
+                                throw new IllegalArgumentException(
+                                        "El lugar de destino debe ser diferente al lugar actual."
+                                );
+                            }
+
+                            if (!confirmAction(
+                                    "Confirmar traslado",
+                                    "¿Desea trasladar "
+                                            + quantity
+                                            + " animal(es) de "
+                                            + translateLocation(
+                                            holding.getLocationType()
+                                    )
+                                            + " a "
+                                            + translateLocation(
+                                            targetLocation
+                                    )
+                                            + "?"
+                            )) {
                                 return;
-                        }
+                            }
 
-                        try {
+                            inventoryService.transfer(
+                                    selected.getAnimalId(),
+                                    holding.getEntryId(),
+                                    holding.getLocationType(),
+                                    targetLocation,
+                                    quantity,
+                                    observationsField
+                                            .getText()
+                                            .trim()
+                            );
 
-                                int cantidad = Integer.parseInt(
-                                                txtCantidad
-                                                                .getText()
-                                                                .trim());
+                        } else if ("DEATH".equals(
+                                movementType)) {
 
-                                if (cantidad <= 0) {
-
-                                        return;
-                                }
-
-                                Animal animal = new Animal();
-
-                                animal.setSpeciesId(
-                                                comboEspecie
-                                                                .getValue()
-                                                                .getSpeciesId());
-
-                                animal.setCommonName(
-                                                txtNombreVulgar
-                                                                .getText()
-                                                                .trim());
-
-                                animal.setScientificName(
-                                                txtNombreCientifico
-                                                                .getText()
-                                                                .trim());
-
-                                animal.setCurrentQuantity(
-                                                cantidad);
-
-                                animal.setOrigin(
-                                                comboOrigen.getValue());
-
-                                animal.setStatus(
-                                                comboEstado.getValue());
-
-                                animalDAO.add(animal);
-
-                                limpiarCampos();
-
-                                cargarAnimales();
-
-                        } catch (NumberFormatException error) {
-
-                                System.out.println(
-                                                "Quantity must be a number.");
-                        }
-                });
-
-                // =====================================
-                // EDIT
-                // =====================================
-
-                btnModificar.setOnAction(e -> {
-
-                        Animal seleccionado = table.getSelectionModel()
-                                        .getSelectedItem();
-
-                        if (seleccionado == null
-                                        || comboEspecie
-                                                        .getValue() == null
-                                        || txtCantidad
-                                                        .getText()
-                                                        .isBlank()
-                                        || comboOrigen
-                                                        .getValue() == null) {
-
+                            if (!confirmAction(
+                                    "Confirmar muerte",
+                                    "¿Confirma que "
+                                            + quantity
+                                            + " animal(es) han muerto?"
+                            )) {
                                 return;
-                        }
+                            }
 
-                        try {
+                            inventoryService.registerDeath(
+                                    selected.getAnimalId(),
+                                    holding.getEntryId(),
+                                    holding.getLocationType(),
+                                    quantity,
+                                    observationsField
+                                            .getText()
+                                            .trim()
+                            );
 
-                                int cantidad = Integer.parseInt(
-                                                txtCantidad
-                                                                .getText()
-                                                                .trim());
+                        } else {
 
-                                if (cantidad <= 0) {
+                            String destination =
+                                    destinationField
+                                            .getText()
+                                            .trim();
 
-                                        return;
-                                }
+                            if (destination.isBlank()) {
 
-                                seleccionado.setSpeciesId(
-                                                comboEspecie
-                                                                .getValue()
-                                                                .getSpeciesId());
+                                throw new IllegalArgumentException(
+                                        "Debe indicar el lugar al que salen los animales."
+                                );
+                            }
 
-                                seleccionado.setCommonName(
-                                                txtNombreVulgar
-                                                                .getText()
-                                                                .trim());
-
-                                seleccionado.setScientificName(
-                                                txtNombreCientifico
-                                                                .getText()
-                                                                .trim());
-
-                                seleccionado.setCurrentQuantity(
-                                                cantidad);
-
-                                seleccionado.setOrigin(
-                                                comboOrigen.getValue());
-
-                                seleccionado.setStatus(
-                                                comboEstado.getValue());
-
-                                animalDAO.update(
-                                                seleccionado);
-
-                                limpiarCampos();
-
-                                cargarAnimales();
-
-                        } catch (NumberFormatException error) {
-
-                                System.out.println(
-                                                "Quantity must be a number.");
-                        }
-                });
-
-                // =====================================
-                // DELETE
-                // =====================================
-
-                btnEliminar.setOnAction(e -> {
-
-                        Animal seleccionado = table.getSelectionModel()
-                                        .getSelectedItem();
-
-                        if (seleccionado == null) {
-
+                            if (!confirmAction(
+                                    "Confirmar salida",
+                                    "¿Confirma la salida de "
+                                            + quantity
+                                            + " animal(es) hacia "
+                                            + destination
+                                            + "?"
+                            )) {
                                 return;
+                            }
+
+                            inventoryService.registerExit(
+                                    selected.getAnimalId(),
+                                    holding.getEntryId(),
+                                    holding.getLocationType(),
+                                    quantity,
+                                    destination,
+                                    observationsField
+                                            .getText()
+                                            .trim()
+                            );
                         }
 
-                        animalDAO.delete(
-                                        seleccionado.getAnimalId());
+                        alert.close();
 
-                        limpiarCampos();
+                        loadInventory();
 
-                        cargarAnimales();
+                        showMessage(
+                                Alert.AlertType.INFORMATION,
+                                "Operación realizada",
+                                movementSuccessMessage(
+                                        movementType
+                                )
+                        );
+
+                    } catch (NumberFormatException exception) {
+
+                        showMessage(
+                                Alert.AlertType.WARNING,
+                                "Cantidad incorrecta",
+                                "Ingrese una cantidad válida usando solamente números."
+                        );
+
+                    } catch (Exception exception) {
+
+                        showMessage(
+                                Alert.AlertType.ERROR,
+                                "No se pudo realizar la operación",
+                                getExceptionMessage(
+                                        exception
+                                )
+                        );
+                    }
                 });
 
-                // =====================================
-                // CLEAR
-                // =====================================
+        alert.showAndWait();
+    }
 
-                btnLimpiar.setOnAction(e -> {
+    private String formatHolding(
+            AnimalHolding holding) {
 
-                        limpiarCampos();
-                });
+        String location =
+                translateLocation(
+                        holding.getLocationType()
+                );
 
-                // =====================================
-                // MAIN CONTENT
-                // =====================================
+        String entry =
+                holding.getEntryId() == null
+                        ? "Sin acta de ingreso"
+                        : "Acta de ingreso N.º "
+                                + holding.getEntryId();
 
-                VBox contenido = new VBox(25);
+        return location
+                + " — "
+                + holding.getQuantity()
+                + " animales — "
+                + entry;
+    }
 
-                contenido.setPadding(
-                                new Insets(35, 40, 35, 40));
+    private int parseQuantity(
+            String value) {
 
-                contenido.setFillWidth(true);
+        if (value.isBlank()) {
 
-                contenido.setStyle(
-                                "-fx-background-color: "
-                                                + COLOR_FONDO
-                                                + ";");
-
-                contenido.getChildren().addAll(
-                                encabezado,
-                                tarjetaFormulario,
-                                seccionTabla);
-
-                // =====================================
-                // MAIN SCROLL
-                // =====================================
-
-                ScrollPane scroll = new ScrollPane();
-
-                scroll.setContent(contenido);
-
-                scroll.setFitToWidth(true);
-
-                scroll.setFitToHeight(false);
-
-                scroll.setHbarPolicy(
-                                ScrollPane.ScrollBarPolicy.NEVER);
-
-                scroll.setVbarPolicy(
-                                ScrollPane.ScrollBarPolicy.AS_NEEDED);
-
-                scroll.setStyle(
-                                "-fx-background: " + COLOR_FONDO + ";" +
-                                                "-fx-background-color: " + COLOR_FONDO + ";");
-
-                // =====================================
-                // SCENE
-                // =====================================
-
-                Scene escena = new Scene(
-                                scroll,
-                                1200,
-                                850);
-
-                view.setTitle(
-                                "Tatú Carreta - Animal Management");
-
-                view.setScene(escena);
-
-                view.setMinWidth(1000);
-
-                view.setMinHeight(700);
-
-                view.setMaximized(true);
-
-                view.show();
+            throw new IllegalArgumentException(
+                    "Debe indicar una cantidad."
+            );
         }
 
-        // =====================================
-        // FIELD LABEL
-        // =====================================
+        int quantity =
+                Integer.parseInt(
+                        value
+                );
 
-        private Label crearLabelCampo(
-                        String texto) {
+        if (quantity <= 0) {
 
-                Label label = new Label(texto);
-
-                label.setStyle(
-                                "-fx-font-size: 12px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #4B5752;");
-
-                return label;
+            throw new IllegalArgumentException(
+                    "La cantidad debe ser mayor que cero."
+            );
         }
 
-        // =====================================
-        // CONFIGURE FIELDS
-        // =====================================
+        return quantity;
+    }
 
-        private void configurarCampo(
-                        Control campo) {
+    private boolean confirmAction(
+            String title,
+            String message) {
 
-                campo.setMaxWidth(
-                                Double.MAX_VALUE);
+        Alert alert =
+                new Alert(
+                        Alert.AlertType.CONFIRMATION
+                );
 
-                campo.setPrefHeight(38);
+        alert.setTitle(
+                title
+        );
 
-                campo.setStyle(
-                                "-fx-background-color: #FAFAF8;" +
-                                                "-fx-border-color: #D7D9D2;" +
-                                                "-fx-border-radius: 7;" +
-                                                "-fx-background-radius: 7;" +
-                                                "-fx-font-size: 13px;");
+        alert.setHeaderText(
+                null
+        );
+
+        alert.setContentText(
+                message
+        );
+
+        return alert.showAndWait()
+                .filter(
+                        button ->
+                                button ==
+                                        javafx.scene.control.ButtonType.OK
+                )
+                .isPresent();
+    }
+
+    private String movementButtonText(
+            String movementType) {
+
+        return switch (movementType) {
+
+            case "TRANSFER" ->
+                    "TRASLADAR";
+
+            case "DEATH" ->
+                    "REGISTRAR MUERTE";
+
+            case "EXIT" ->
+                    "REGISTRAR SALIDA";
+
+            default ->
+                    "GUARDAR";
+        };
+    }
+
+    private String movementSuccessMessage(
+            String movementType) {
+
+        return switch (movementType) {
+
+            case "TRANSFER" ->
+                    "El traslado fue registrado correctamente.";
+
+            case "DEATH" ->
+                    "La muerte fue registrada correctamente.";
+
+            case "EXIT" ->
+                    "La salida fue registrada correctamente.";
+
+            default ->
+                    "La operación fue registrada correctamente.";
+        };
+    }
+
+    private String getExceptionMessage(
+            Exception exception) {
+
+        if (exception.getMessage() == null
+                || exception.getMessage().isBlank()) {
+
+            return "Ocurrió un error inesperado.";
         }
 
-        // =====================================
-        // PRIMARY BUTTON
-        // =====================================
+        return exception.getMessage();
+    }
 
-        private Button crearBotonPrincipal(
-                        String texto) {
+    private void addAnimal() {
 
-                Button boton = new Button(texto);
-
-                boton.setPrefHeight(38);
-
-                boton.setStyle(
-                                "-fx-background-color: "
-                                                + COLOR_VERDE + ";" +
-                                                "-fx-text-fill: white;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-background-radius: 7;" +
-                                                "-fx-font-size: 12px;");
-
-                return boton;
+        if (!validateAnimalFields()) {
+            return;
         }
 
-        // =====================================
-        // SECONDARY BUTTON
-        // =====================================
+        Animal animal =
+                new Animal();
 
-        private Button crearBotonSecundario(
-                        String texto) {
+        animal.setSpeciesId(
+                speciesComboBox
+                        .getValue()
+                        .getSpeciesId()
+        );
 
-                Button boton = new Button(texto);
+        animal.setCommonName(
+                commonNameField
+                        .getText()
+                        .trim()
+        );
 
-                boton.setPrefHeight(38);
+        animal.setScientificName(
+                scientificNameField
+                        .getText()
+                        .trim()
+        );
 
-                boton.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: " + COLOR_VERDE + ";" +
-                                                "-fx-border-color: #B8C7B8;" +
-                                                "-fx-border-radius: 7;" +
-                                                "-fx-background-radius: 7;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-font-size: 12px;");
+        animal.setCurrentQuantity(
+                0
+        );
 
-                return boton;
+        animal.setOrigin(
+                originComboBox.getValue()
+        );
+
+        animal.setStatus(
+                statusComboBox.getValue()
+        );
+
+        animalDAO.add(
+                animal
+        );
+
+        clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Operación exitosa",
+                "El animal fue registrado correctamente."
+        );
+    }
+
+    private void updateAnimal() {
+
+        Animal animal =
+                selectedAnimal;
+
+        if (animal == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Debe seleccionar un animal primero."
+            );
+
+            return;
         }
 
-        // =====================================
-        // DELETE BUTTON
-        // =====================================
-
-        private Button crearBotonEliminar(
-                        String texto) {
-
-                Button boton = new Button(texto);
-
-                boton.setPrefHeight(38);
-
-                boton.setStyle(
-                                "-fx-background-color: #FFFFFF;" +
-                                                "-fx-text-fill: #A94442;" +
-                                                "-fx-border-color: #D8B3B3;" +
-                                                "-fx-border-radius: 7;" +
-                                                "-fx-background-radius: 7;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-font-size: 12px;");
-
-                return boton;
+        if (!validateAnimalFields()) {
+            return;
         }
 
-        // =====================================
-        // LOAD SPECIES
-        // =====================================
+        animal.setSpeciesId(
+                speciesComboBox
+                        .getValue()
+                        .getSpeciesId()
+        );
 
-        private void cargarEspecies() {
+        animal.setCommonName(
+                commonNameField
+                        .getText()
+                        .trim()
+        );
 
-                ObservableList<Species> especies = FXCollections.observableArrayList(
-                                new SpeciesDAO().list());
+        animal.setScientificName(
+                scientificNameField
+                        .getText()
+                        .trim()
+        );
 
-                comboEspecie.setItems(
-                                especies);
+        animal.setOrigin(
+                originComboBox.getValue()
+        );
+
+        animal.setStatus(
+                statusComboBox.getValue()
+        );
+
+        animalDAO.update(
+                animal
+        );
+
+        clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Operación exitosa",
+                "La información del animal fue actualizada correctamente."
+        );
+    }
+
+    private void deleteAnimal() {
+
+        if (selectedAnimal == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Debe seleccionar un animal primero."
+            );
+
+            return;
         }
 
-        // =====================================
-        // LOAD ANIMALS
-        // =====================================
+        if (selectedAnimal.getCurrentQuantity() > 0) {
 
-        private void cargarAnimales() {
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "No se puede eliminar",
+                    "No se puede eliminar un animal que todavía tiene ejemplares en la reserva."
+            );
 
-                ObservableList<Animal> lista = FXCollections.observableArrayList(
-                                animalDAO.list());
-
-                table.setItems(
-                                lista);
+            return;
         }
 
-        // =====================================
-        // CLEAR FIELDS
-        // =====================================
+        boolean confirmed =
+                confirmAction(
+                        "Confirmar eliminación",
+                        "¿Está seguro de que desea eliminar este animal?"
+                );
 
-        private void limpiarCampos() {
-
-                comboEspecie.setValue(null);
-
-                txtNombreVulgar.clear();
-
-                txtNombreCientifico.clear();
-
-                txtCantidad.clear();
-
-                comboOrigen.setValue(
-                                "Admission");
-
-                comboEstado.setValue(
-                                "Active");
-
-                table.getSelectionModel()
-                                .clearSelection();
+        if (!confirmed) {
+            return;
         }
+
+        animalDAO.delete(
+                selectedAnimal.getAnimalId()
+        );
+
+        clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Operación exitosa",
+                "El animal fue eliminado correctamente."
+        );
+    }
+
+    private boolean validateAnimalFields() {
+
+        if (speciesComboBox.getValue() == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Validación",
+                    "Debe seleccionar una especie."
+            );
+
+            return false;
+        }
+
+        if (commonNameField
+                .getText()
+                .isBlank()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Validación",
+                    "El nombre común es obligatorio."
+            );
+
+            return false;
+        }
+
+        if (scientificNameField
+                .getText()
+                .isBlank()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Validación",
+                    "El nombre científico es obligatorio."
+            );
+
+            return false;
+        }
+
+        if (originComboBox.getValue() == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Validación",
+                    "Debe seleccionar un origen."
+            );
+
+            return false;
+        }
+
+        if (statusComboBox.getValue() == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Validación",
+                    "Debe seleccionar un estado."
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void loadInventory() {
+
+        inventory.setAll(
+                holdingDAO.listInventorySummary()
+        );
+
+        table.setItems(
+                inventory
+        );
+    }
+
+    private void loadSpecies() {
+
+        species.setAll(
+                speciesDAO.list()
+        );
+
+        speciesComboBox.setItems(
+                species
+        );
+    }
+
+    private void showInformationSection() {
+
+        contentContainer
+                .getChildren()
+                .setAll(
+                        createInformationSection()
+                );
+    }
+
+    private void showInventorySection() {
+
+        contentContainer
+                .getChildren()
+                .setAll(
+                        createInventorySection()
+                );
+    }
+
+    private void selectSection(
+            Button selected) {
+
+        informationButton.setStyle(
+                normalSectionStyle()
+        );
+
+        registeredButton.setStyle(
+                normalSectionStyle()
+        );
+
+        selected.setStyle(
+                selectedSectionStyle()
+        );
+    }
+
+    private void clearFields() {
+
+        selectedAnimal = null;
+
+        if (speciesComboBox != null) {
+
+            speciesComboBox.setValue(
+                    null
+            );
+        }
+
+        if (commonNameField != null) {
+
+            commonNameField.clear();
+        }
+
+        if (scientificNameField != null) {
+
+            scientificNameField.clear();
+        }
+
+        if (originComboBox != null) {
+
+            originComboBox.setValue(
+                    "Admission"
+            );
+        }
+
+        if (statusComboBox != null) {
+
+            statusComboBox.setValue(
+                    "Active"
+            );
+        }
+
+        table.getSelectionModel()
+                .clearSelection();
+    }
+
+    private void configureOriginConverter() {
+
+        originComboBox.setConverter(
+                new StringConverter<>() {
+
+                    @Override
+                    public String toString(
+                            String value) {
+
+                        return translateOrigin(
+                                value
+                        );
+                    }
+
+                    @Override
+                    public String fromString(
+                            String value) {
+
+                        return value;
+                    }
+                }
+        );
+    }
+
+    private void configureStatusConverter() {
+
+        statusComboBox.setConverter(
+                new StringConverter<>() {
+
+                    @Override
+                    public String toString(
+                            String value) {
+
+                        return translateStatus(
+                                value
+                        );
+                    }
+
+                    @Override
+                    public String fromString(
+                            String value) {
+
+                        return value;
+                    }
+                }
+        );
+    }
+
+    private String translateOrigin(
+            String value) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+
+            case "Admission" ->
+                    "Ingreso";
+
+            case "Already existing in the reserve" ->
+                    "Ya existente en la reserva";
+
+            default ->
+                    value;
+        };
+    }
+
+    private String translateStatus(
+            String value) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+
+            case "Active" ->
+                    "Activo";
+
+            case "Inactive" ->
+                    "Inactivo";
+
+            default ->
+                    value;
+        };
+    }
+
+    private String translateLocation(
+            String value) {
+
+        if (value == null) {
+            return "";
+        }
+
+        if (AnimalInventoryService.QUARANTINE
+                .equals(value)) {
+
+            return "Cuarentena";
+        }
+
+        if (AnimalInventoryService.PERMANENT
+                .equals(value)) {
+
+            return "Permanente";
+        }
+
+        return value;
+    }
+
+    private String translateMovementType(
+            String value) {
+
+        return switch (value) {
+
+            case "TRANSFER" ->
+                    "Trasladar animales";
+
+            case "DEATH" ->
+                    "Registrar muerte";
+
+            case "EXIT" ->
+                    "Registrar salida";
+
+            default ->
+                    value;
+        };
+    }
+
+    private String safeValue(
+            String value) {
+
+        return value == null
+                ? ""
+                : value;
+    }
+
+    private Button createSectionButton(
+            String text,
+            boolean selected) {
+
+        Button button =
+                new Button(text);
+
+        button.setPrefHeight(
+                42
+        );
+
+        button.setPadding(
+                new Insets(
+                        0,
+                        22,
+                        0,
+                        22
+                )
+        );
+
+        button.setStyle(
+                selected
+                        ? selectedSectionStyle()
+                        : normalSectionStyle()
+        );
+
+        return button;
+    }
+
+    private String selectedSectionStyle() {
+
+        return """
+                -fx-background-color: #23452C;
+                -fx-text-fill: white;
+                -fx-background-radius: 7;
+                -fx-font-size: 13px;
+                -fx-font-weight: bold;
+                """;
+    }
+
+    private String normalSectionStyle() {
+
+        return """
+                -fx-background-color: transparent;
+                -fx-text-fill: #56635C;
+                -fx-background-radius: 7;
+                -fx-font-size: 13px;
+                -fx-font-weight: bold;
+                """;
+    }
+
+    private Label title(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-size: 20px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #23452C;"
+        );
+
+        return label;
+    }
+
+    private Label label(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-size: 13px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #4B5752;"
+        );
+
+        return label;
+    }
+
+    private void configureControl(
+            javafx.scene.control.Control control) {
+
+        control.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        control.setPrefHeight(
+                40
+        );
+    }
+
+    private Button primaryButton(
+            String text) {
+
+        Button button =
+                new Button(text);
+
+        button.setPrefHeight(
+                40
+        );
+
+        button.setStyle(
+                "-fx-background-color: #23452C;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 7;" +
+                "-fx-font-size: 12px;"
+        );
+
+        return button;
+    }
+
+    private Button secondaryButton(
+            String text) {
+
+        Button button =
+                new Button(text);
+
+        button.setPrefHeight(
+                40
+        );
+
+        button.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: #23452C;" +
+                "-fx-border-color: #B8C7B8;" +
+                "-fx-border-radius: 7;" +
+                "-fx-background-radius: 7;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 12px;"
+        );
+
+        return button;
+    }
+
+    private Button deleteButton(
+            String text) {
+
+        Button button =
+                new Button(text);
+
+        button.setPrefHeight(
+                40
+        );
+
+        button.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: #A94442;" +
+                "-fx-border-color: #D8B3B3;" +
+                "-fx-border-radius: 7;" +
+                "-fx-background-radius: 7;" +
+                "-fx-font-weight: bold;" +
+                "-fx-font-size: 12px;"
+        );
+
+        return button;
+    }
+
+    private void showMessage(
+            Alert.AlertType type,
+            String title,
+            String message) {
+
+        Alert alert =
+                new Alert(type);
+
+        alert.setTitle(
+                title
+        );
+
+        alert.setHeaderText(
+                null
+        );
+
+        alert.setContentText(
+                message
+        );
+
+        alert.showAndWait();
+    }
 }
