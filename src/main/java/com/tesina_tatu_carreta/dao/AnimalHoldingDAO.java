@@ -66,9 +66,7 @@ public class AnimalHoldingDAO {
         try (PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
-            statement.setInt(
-                    1,
-                    animalId);
+            statement.setInt(1, animalId);
 
             if (entryId == null) {
 
@@ -91,7 +89,6 @@ public class AnimalHoldingDAO {
                          statement.executeQuery()) {
 
                 if (result.next()) {
-
                     return map(result);
                 }
             }
@@ -161,7 +158,6 @@ public class AnimalHoldingDAO {
                          statement.getGeneratedKeys()) {
 
                 if (keys.next()) {
-
                     return keys.getInt(1);
                 }
             }
@@ -210,10 +206,6 @@ public class AnimalHoldingDAO {
     // =========================================================
     // GET AVAILABLE QUANTITY
     // =========================================================
-    //
-    // Returns the quantity available for:
-    // animal + entry + location.
-    // =========================================================
 
     public int getAvailableQuantity(
             int animalId,
@@ -227,15 +219,13 @@ public class AnimalHoldingDAO {
                     connection,
                     animalId,
                     entryId,
-                    locationType
-            );
+                    locationType);
 
         } catch (SQLException exception) {
 
             throw new RuntimeException(
                     "Error getting available animal quantity.",
-                    exception
-            );
+                    exception);
         }
     }
 
@@ -255,8 +245,7 @@ public class AnimalHoldingDAO {
                         connection,
                         animalId,
                         entryId,
-                        locationType
-                );
+                        locationType);
 
         if (holding == null
                 || holding.getQuantity() <= 0) {
@@ -269,10 +258,6 @@ public class AnimalHoldingDAO {
 
     // =========================================================
     // TOTAL AVAILABLE QUANTITY BY ANIMAL
-    // =========================================================
-    //
-    // Sums all positive holdings of an animal.
-    // This represents the real current quantity.
     // =========================================================
 
     public int getTotalAvailableQuantity(
@@ -306,7 +291,6 @@ public class AnimalHoldingDAO {
                          statement.executeQuery()) {
 
                 if (result.next()) {
-
                     return result.getInt(1);
                 }
             }
@@ -318,9 +302,6 @@ public class AnimalHoldingDAO {
     // =========================================================
     // TOTAL AVAILABLE QUANTITY BY ANIMAL
     // =========================================================
-    //
-    // Version without an external connection.
-    // =========================================================
 
     public int getTotalAvailableQuantity(
             int animalId) {
@@ -330,27 +311,18 @@ public class AnimalHoldingDAO {
 
             return getTotalAvailableQuantity(
                     connection,
-                    animalId
-            );
+                    animalId);
 
         } catch (SQLException exception) {
 
             throw new RuntimeException(
                     "Error getting total available animal quantity.",
-                    exception
-            );
+                    exception);
         }
     }
 
     // =========================================================
     // AVAILABLE QUANTITY BY ANIMAL + ENTRY
-    // =========================================================
-    //
-    // Important for the movement screen.
-    //
-    // An animal may have several acts/entries, therefore
-    // the quantity must be calculated specifically for
-    // the selected entry.
     // =========================================================
 
     public int getAvailableQuantityByAnimalAndEntry(
@@ -363,15 +335,13 @@ public class AnimalHoldingDAO {
             return getAvailableQuantityByAnimalAndEntry(
                     connection,
                     animalId,
-                    entryId
-            );
+                    entryId);
 
         } catch (SQLException exception) {
 
             throw new RuntimeException(
                     "Error getting quantity by animal and entry.",
-                    exception
-            );
+                    exception);
         }
     }
 
@@ -417,7 +387,6 @@ public class AnimalHoldingDAO {
                          statement.executeQuery()) {
 
                 if (result.next()) {
-
                     return result.getInt(1);
                 }
             }
@@ -442,15 +411,13 @@ public class AnimalHoldingDAO {
                     connection,
                     animalId,
                     entryId,
-                    locationType
-            );
+                    locationType);
 
         } catch (SQLException exception) {
 
             throw new RuntimeException(
                     "Error getting quantity by animal, entry and location.",
-                    exception
-            );
+                    exception);
         }
     }
 
@@ -502,7 +469,6 @@ public class AnimalHoldingDAO {
                          statement.executeQuery()) {
 
                 if (result.next()) {
-
                     return result.getInt(1);
                 }
             }
@@ -630,8 +596,7 @@ public class AnimalHoldingDAO {
 
             throw new RuntimeException(
                     "Error listing holdings by entry.",
-                    exception
-            );
+                    exception);
         }
 
         return result;
@@ -639,6 +604,18 @@ public class AnimalHoldingDAO {
 
     // =========================================================
     // INVENTORY SUMMARY
+    // =========================================================
+    //
+    // IMPORTANTE:
+    // Se muestran TODOS los animales registrados.
+    //
+    // Antes existía:
+    //
+    // HAVING permanent_quantity
+    //      + quarantine_quantity > 0
+    //
+    // Eso hacía desaparecer los animales con cantidad 0.
+    // Ahora el LEFT JOIN permite conservarlos.
     // =========================================================
 
     public List<AnimalInventorySummary> listInventorySummary() {
@@ -689,10 +666,6 @@ public class AnimalHoldingDAO {
                     a.scientific_name,
                     a.status
 
-                HAVING
-                    permanent_quantity
-                    + quarantine_quantity > 0
-
                 ORDER BY a.common_name
                 """;
 
@@ -713,14 +686,19 @@ public class AnimalHoldingDAO {
                         new AnimalInventorySummary(
                                 resultSet.getInt(
                                         "animal_id"),
+
                                 resultSet.getString(
                                         "common_name"),
+
                                 resultSet.getString(
                                         "scientific_name"),
+
                                 resultSet.getInt(
                                         "permanent_quantity"),
+
                                 resultSet.getInt(
                                         "quarantine_quantity"),
+
                                 resultSet.getString(
                                         "status")));
             }
@@ -765,7 +743,6 @@ public class AnimalHoldingDAO {
             ) {
 
                 if (result.next()) {
-
                     return result.getInt(1);
                 }
             }
@@ -790,7 +767,6 @@ public class AnimalHoldingDAO {
                 result.getInt("entry_id");
 
         if (result.wasNull()) {
-
             return null;
         }
 
