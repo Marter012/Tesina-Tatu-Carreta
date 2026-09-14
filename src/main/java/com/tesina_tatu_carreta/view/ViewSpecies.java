@@ -3,446 +3,865 @@ package com.tesina_tatu_carreta.view;
 import com.tesina_tatu_carreta.dao.SpeciesDAO;
 import com.tesina_tatu_carreta.model.Species;
 
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
 public class ViewSpecies {
 
-        private final SpeciesDAO speciesDAO = new SpeciesDAO();
+    private final SpeciesDAO speciesDAO =
+            new SpeciesDAO();
 
-        private final TableView<Species> table = new TableView<>();
+    private final ObservableList<Species> speciesList =
+            FXCollections.observableArrayList();
 
-        private final TextField txtNombre = new TextField();
+    private final TableView<Species> table =
+            new TableView<>();
 
-        public void show() {
+    private TextField speciesNameField;
 
-                Stage ventana = new Stage();
+    private VBox sectionContainer;
 
-                // =========================================
-                // HEADER
-                // =========================================
+    private Button informationButton;
+    private Button registeredButton;
+
+    private VBox informationSection;
+    private VBox registeredSection;
+
+    // =========================================================
+    // VIEW
+    // =========================================================
+
+    public Parent getView() {
+        return createView();
+    }
+
+    public Parent createView() {
+
+        VBox root =
+                new VBox(20);
+
+        root.setPadding(
+                new Insets(25)
+        );
+
+        root.setStyle(
+                "-fx-background-color: #F4F1E8;"
+        );
+
+        Label title =
+                new Label(
+                        "Gestión de especies"
+                );
+
+        title.setStyle(
+                "-fx-font-size: 26px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
+        );
+
+        Label subtitle =
+                new Label(
+                        "Gestiona las especies registradas en el sistema."
+                );
+
+        subtitle.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-text-fill: #405047;"
+        );
+
+        VBox header =
+                new VBox(
+                        5,
+                        title,
+                        subtitle
+                );
 
-                Label breadcrumb = new Label("Home / Species Management");
+        informationSection =
+                createInformationSection();
+
+        registeredSection =
+                createRegisteredSection();
+
+        informationButton =
+                createSectionButton(
+                        "Información de especies"
+                );
 
-                breadcrumb.setStyle(
-                                "-fx-font-size: 12px;" +
-                                                "-fx-text-fill: #7A8580;");
+        registeredButton =
+                createSectionButton(
+                        "Especies registradas"
+                );
 
-                Label titulo = new Label("Species Management");
+        HBox navigation =
+                new HBox(12);
 
-                titulo.setStyle(
-                                "-fx-font-size: 28px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #2E4138;");
+        navigation.setAlignment(
+                Pos.CENTER
+        );
 
-                Label subtitulo = new Label(
-                                "Manage the species registered in the reserve");
-
-                subtitulo.setStyle(
-                                "-fx-font-size: 14px;" +
-                                                "-fx-text-fill: #6B756F;");
-
-                VBox encabezado = new VBox(
-                                6,
-                                breadcrumb,
-                                titulo,
-                                subtitulo);
-
-                // =========================================
-                // SPECIES INFORMATION
-                // =========================================
-
-                Label tituloDatos = new Label("Species Information");
-
-                tituloDatos.setStyle(
-                                "-fx-font-size: 19px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #2E4138;");
-
-                Label lblNombre = new Label("Species name");
-
-                lblNombre.setStyle(
-                                "-fx-font-size: 13px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #445149;");
-
-                txtNombre.setPromptText(
-                                "E.g.: Birds, Mammals, Reptiles");
-
-                txtNombre.setPrefHeight(38);
-
-                txtNombre.setMaxWidth(
-                                Double.MAX_VALUE);
-
-                txtNombre.setStyle(
-                                "-fx-background-radius: 8;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-border-color: #D1D8D2;" +
-                                                "-fx-padding: 8;");
-
-                VBox campoNombre = new VBox(
-                                8,
-                                lblNombre,
-                                txtNombre);
-
-                // =========================================
-                // BUTTONS
-                // =========================================
-
-                Button btnLimpiar = new Button("CLEAR");
-
-                Button btnEliminar = new Button("DELETE");
-
-                Button btnModificar = new Button("EDIT");
-
-                Button btnAgregar = new Button("ADD");
-
-                Button btnVolver = new Button("BACK");
-
-                btnLimpiar.setPrefHeight(36);
-                btnEliminar.setPrefHeight(36);
-                btnModificar.setPrefHeight(36);
-                btnAgregar.setPrefHeight(36);
-                btnVolver.setPrefHeight(38);
-
-                btnLimpiar.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #405047;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #C9D2CB;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                btnEliminar.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #A34A4A;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #E2C5C5;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                btnModificar.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #405047;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #C9D2CB;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                btnAgregar.setStyle(
-                                "-fx-background-color: #254D3D;" +
-                                                "-fx-text-fill: white;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-background-radius: 8;");
-
-                btnVolver.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #405047;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #C9D2CB;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                HBox botones = new HBox(
-                                10,
-                                btnLimpiar,
-                                btnEliminar,
-                                btnModificar,
-                                btnAgregar);
-
-                botones.setAlignment(
-                                Pos.CENTER_RIGHT);
-
-                VBox tarjetaDatos = new VBox(
-                                20,
-                                tituloDatos,
-                                campoNombre,
-                                botones);
-
-                tarjetaDatos.setPadding(
-                                new Insets(25));
-
-                tarjetaDatos.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 16;" +
-                                                "-fx-border-color: #D8DED9;" +
-                                                "-fx-border-radius: 16;");
-
-                // =========================================
-                // TABLE
-                // =========================================
-
-                TableColumn<Species, Integer> columnaId = new TableColumn<>("ID");
-
-                columnaId.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "idEspecie"));
-
-                columnaId.setPrefWidth(120);
-
-                TableColumn<Species, String> columnaNombre = new TableColumn<>(
-                                "Species name");
-
-                columnaNombre.setCellValueFactory(
-                                new PropertyValueFactory<>(
-                                                "nombre"));
-
-                table.getColumns().clear();
-
-                table.getColumns().add(columnaId);
-                table.getColumns().add(columnaNombre);
-
-                table.setColumnResizePolicy(
-                                TableView.CONSTRAINED_RESIZE_POLICY);
-
-                // The table can grow but does not unnecessarily
-                // occupy the entire screen.
-
-                table.setPrefHeight(280);
-
-                table.setMinHeight(200);
-
-                VBox.setVgrow(
-                                table,
-                                Priority.ALWAYS);
-
-                Label tituloTabla = new Label("Registered Species");
-
-                tituloTabla.setStyle(
-                                "-fx-font-size: 19px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #2E4138;");
-
-                VBox tarjetaTabla = new VBox(
-                                15,
-                                tituloTabla,
-                                table);
-
-                tarjetaTabla.setPadding(
-                                new Insets(25));
-
-                tarjetaTabla.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 16;" +
-                                                "-fx-border-color: #D8DED9;" +
-                                                "-fx-border-radius: 16;");
-
-                // =========================================
-                // BACK BUTTON
-                // =========================================
-
-                HBox contenedorVolver = new HBox(btnVolver);
-
-                contenedorVolver.setAlignment(
-                                Pos.CENTER);
-
-                contenedorVolver.setPadding(
-                                new Insets(5, 0, 15, 0));
-
-                // =========================================
-                // LOAD DATA
-                // =========================================
-
-                cargarEspecies();
-
-                // =========================================
-                // SELECT
-                // =========================================
-
+        navigation.getChildren().addAll(
+                informationButton,
+                registeredButton
+        );
+
+        sectionContainer =
+                new VBox();
+
+        sectionContainer.setFillWidth(
+                true
+        );
+
+        VBox.setVgrow(
+                sectionContainer,
+                Priority.ALWAYS
+        );
+
+        informationButton.setOnAction(
+                event ->
+                        showSection(
+                                informationSection,
+                                informationButton
+                        )
+        );
+
+        registeredButton.setOnAction(
+                event ->
+                        showSection(
+                                registeredSection,
+                                registeredButton
+                        )
+        );
+
+        loadSpecies();
+
+        root.getChildren().addAll(
+                header,
+                navigation,
+                sectionContainer
+        );
+
+        showSection(
+                informationSection,
+                informationButton
+        );
+
+        ScrollPane scrollPane =
+                new ScrollPane(root);
+
+        scrollPane.setFitToWidth(
+                true
+        );
+
+        scrollPane.setFitToHeight(
+                true
+        );
+
+        scrollPane.setStyle(
+                "-fx-background: #F4F1E8;"
+        );
+
+        return scrollPane;
+    }
+
+    // =========================================================
+    // INFORMATION SECTION
+    // =========================================================
+
+    private VBox createInformationSection() {
+
+        VBox section =
+                new VBox(20);
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Información de la especie"
+                );
+
+        GridPane form =
+                new GridPane();
+
+        form.setHgap(20);
+        form.setVgap(15);
+
+        speciesNameField =
+                new TextField();
+
+        speciesNameField.setPromptText(
+                "Ingrese el nombre de la especie"
+        );
+
+        GridPane.setHgrow(
+                speciesNameField,
+                Priority.ALWAYS
+        );
+
+        form.add(
+                createFieldLabel(
+                        "Nombre de la especie"
+                ),
+                0,
+                0
+        );
+
+        form.add(
+                speciesNameField,
+                1,
+                0
+        );
+
+        Button clearButton =
+                new Button(
+                        "LIMPIAR"
+                );
+
+        Button deleteButton =
+                new Button(
+                        "ELIMINAR"
+                );
+
+        Button editButton =
+                new Button(
+                        "EDITAR"
+                );
+
+        Button addButton =
+                new Button(
+                        "AGREGAR"
+                );
+
+        applySecondaryStyle(
+                clearButton
+        );
+
+        applyDeleteStyle(
+                deleteButton
+        );
+
+        applySecondaryStyle(
+                editButton
+        );
+
+        applyPrimaryStyle(
+                addButton
+        );
+
+        clearButton.setOnAction(
+                event ->
+                        clearFields()
+        );
+
+        deleteButton.setOnAction(
+                event ->
+                        deleteSpecies()
+        );
+
+        editButton.setOnAction(
+                event ->
+                        prepareEditSpecies()
+        );
+
+        addButton.setOnAction(
+                event ->
+                        addSpecies()
+        );
+
+        HBox actions =
+                new HBox(10);
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        actions.getChildren().addAll(
+                clearButton,
+                deleteButton,
+                editButton,
+                addButton
+        );
+
+        card.getChildren().addAll(
+                title,
+                form,
+                actions
+        );
+
+        section.getChildren().add(
+                card
+        );
+
+        return section;
+    }
+
+    // =========================================================
+    // REGISTERED SECTION
+    // =========================================================
+
+    private VBox createRegisteredSection() {
+
+        VBox section =
+                new VBox(20);
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Especies registradas"
+                );
+
+        createTable();
+
+        Button refreshButton =
+                new Button(
+                        "ACTUALIZAR"
+                );
+
+        applySecondaryStyle(
+                refreshButton
+        );
+
+        refreshButton.setOnAction(
+                event ->
+                        loadSpecies()
+        );
+
+        HBox actions =
+                new HBox(10);
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        actions.getChildren().add(
+                refreshButton
+        );
+
+        card.getChildren().addAll(
+                title,
+                table,
+                actions
+        );
+
+        VBox.setVgrow(
+                table,
+                Priority.ALWAYS
+        );
+
+        section.getChildren().add(
+                card
+        );
+
+        return section;
+    }
+
+    // =========================================================
+    // TABLE
+    // =========================================================
+
+    private void createTable() {
+
+        table.getColumns().clear();
+
+        TableColumn<Species, Number>
+                idColumn =
+                new TableColumn<>(
+                        "ID"
+                );
+
+        idColumn.setCellValueFactory(
+                data ->
+                        new SimpleIntegerProperty(
+                                data.getValue()
+                                        .getSpeciesId()
+                        )
+        );
+
+        TableColumn<Species, String>
+                nameColumn =
+                new TableColumn<>(
+                        "Nombre de la especie"
+                );
+
+        nameColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getName()
+                        )
+        );
+
+        idColumn.setPrefWidth(
+                100
+        );
+
+        nameColumn.setPrefWidth(
+                400
+        );
+
+        table.getColumns().addAll(
+                idColumn,
+                nameColumn
+        );
+
+        table.setItems(
+                speciesList
+        );
+
+        table.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY
+        );
+
+        table.setPrefHeight(
+                420
+        );
+
+        table.setMinHeight(
+                420
+        );
+
+        table.getSelectionModel()
+                .selectedItemProperty()
+                .addListener(
+                        (observable,
+                         oldValue,
+                         newValue) -> {
+
+                            if (newValue != null
+                                    && speciesNameField != null) {
+
+                                speciesNameField.setText(
+                                        newValue.getName()
+                                );
+                            }
+                        }
+                );
+    }
+
+    // =========================================================
+    // ADD
+    // =========================================================
+
+    private void addSpecies() {
+
+        String name =
+                speciesNameField
+                        .getText()
+                        .trim();
+
+        if (name.isEmpty()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "El nombre de la especie es obligatorio."
+            );
+
+            return;
+        }
+
+        Species species =
+                new Species();
+
+        species.setName(
+                name
+        );
+
+        speciesDAO.add(
+                species
+        );
+
+        loadSpecies();
+
+        clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Éxito",
+                "Especie agregada correctamente."
+        );
+    }
+
+    // =========================================================
+    // EDIT
+    // =========================================================
+
+    private void prepareEditSpecies() {
+
+        Species selected =
                 table.getSelectionModel()
-                                .selectedItemProperty()
-                                .addListener(
-                                                (observable,
-                                                                anterior,
-                                                                seleccionada) -> {
+                        .getSelectedItem();
 
-                                                        if (seleccionada != null) {
+        if (selected == null) {
 
-                                                                txtNombre.setText(
-                                                                                seleccionada.getName());
-                                                        }
-                                                });
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Seleccione primero una especie."
+            );
 
-                // =========================================
-                // ADD
-                // =========================================
-
-                btnAgregar.setOnAction(e -> {
-
-                        if (txtNombre.getText().isBlank()) {
-                                return;
-                        }
-
-                        Species especie = new Species();
-
-                        especie.setName(
-                                        txtNombre.getText().trim());
-
-                        speciesDAO.add(especie);
-
-                        limpiarCampos();
-
-                        cargarEspecies();
-                });
-
-                // =========================================
-                // EDIT
-                // =========================================
-
-                btnModificar.setOnAction(e -> {
-
-                        Species seleccionada = table.getSelectionModel()
-                                        .getSelectedItem();
-
-                        if (seleccionada == null
-                                        || txtNombre.getText().isBlank()) {
-
-                                return;
-                        }
-
-                        seleccionada.setName(
-                                        txtNombre.getText().trim());
-
-                        speciesDAO.update(
-                                        seleccionada);
-
-                        limpiarCampos();
-
-                        cargarEspecies();
-                });
-
-                // =========================================
-                // DELETE
-                // =========================================
-
-                btnEliminar.setOnAction(e -> {
-
-                        Species seleccionada = table.getSelectionModel()
-                                        .getSelectedItem();
-
-                        if (seleccionada == null) {
-                                return;
-                        }
-
-                        speciesDAO.delete(
-                                        seleccionada.getSpeciesId());
-
-                        limpiarCampos();
-
-                        cargarEspecies();
-                });
-
-                // =========================================
-                // CLEAR
-                // =========================================
-
-                btnLimpiar.setOnAction(e -> limpiarCampos());
-
-                // =========================================
-                // BACK
-                // =========================================
-
-                btnVolver.setOnAction(e -> ventana.close());
-
-                // =========================================
-                // CONTENT
-                // =========================================
-
-                VBox contenido = new VBox(
-                                25,
-                                encabezado,
-                                tarjetaDatos,
-                                tarjetaTabla,
-                                contenedorVolver);
-
-                contenido.setPadding(
-                                new Insets(25, 35, 35, 35));
-
-                contenido.setAlignment(
-                                Pos.TOP_CENTER);
-
-                contenido.setMaxWidth(
-                                Double.MAX_VALUE);
-
-                contenido.setStyle(
-                                "-fx-background-color: #F4F1E8;");
-
-                // =========================================
-                // SCROLL
-                // =========================================
-
-                ScrollPane scroll = new ScrollPane(contenido);
-
-                scroll.setFitToWidth(true);
-
-                scroll.setFitToHeight(true);
-
-                scroll.setStyle(
-                                "-fx-background: #F4F1E8;" +
-                                                "-fx-background-color: #F4F1E8;");
-
-                // =========================================
-                // SCENE
-                // =========================================
-
-                Scene escena = new Scene(
-                                scroll,
-                                1100,
-                                750);
-
-                ventana.setTitle(
-                                "Tatú Carreta - Species Management");
-
-                ventana.setMinWidth(900);
-
-                ventana.setMinHeight(650);
-
-                ventana.setScene(escena);
-
-                // IMPORTANT:
-                // The window opens maximized so it is
-                // never cut off on the screen.
-
-                ventana.setMaximized(true);
-
-                ventana.show();
+            return;
         }
 
-        // =========================================
-        // LOAD SPECIES
-        // =========================================
+        speciesNameField.setText(
+                selected.getName()
+        );
 
-        private void cargarEspecies() {
+        speciesNameField.requestFocus();
 
-                ObservableList<Species> lista = FXCollections.observableArrayList(
-                                speciesDAO.list());
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Editar especie",
+                "Modifique el nombre y luego confirme con el botón EDITAR."
+        );
+    }
 
-                table.setItems(lista);
-        }
+    private void updateSpecies() {
 
-        // =========================================
-        // CLEAR
-        // =========================================
-
-        private void limpiarCampos() {
-
-                txtNombre.clear();
-
+        Species selected =
                 table.getSelectionModel()
-                                .clearSelection();
+                        .getSelectedItem();
+
+        if (selected == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Seleccione primero una especie."
+            );
+
+            return;
         }
+
+        String name =
+                speciesNameField
+                        .getText()
+                        .trim();
+
+        if (name.isEmpty()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "El nombre de la especie es obligatorio."
+            );
+
+            return;
+        }
+
+        selected.setName(
+                name
+        );
+
+        speciesDAO.update(
+                selected
+        );
+
+        loadSpecies();
+
+        clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Éxito",
+                "Especie actualizada correctamente."
+        );
+    }
+
+    // =========================================================
+    // DELETE
+    // =========================================================
+
+    private void deleteSpecies() {
+
+        Species selected =
+                table.getSelectionModel()
+                        .getSelectedItem();
+
+        if (selected == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Seleccione primero una especie."
+            );
+
+            return;
+        }
+
+        Alert confirmation =
+                new Alert(
+                        Alert.AlertType.CONFIRMATION
+                );
+
+        confirmation.setTitle(
+                "Eliminar especie"
+        );
+
+        confirmation.setHeaderText(
+                null
+        );
+
+        confirmation.setContentText(
+                "¿Está seguro de que desea eliminar la especie \""
+                        + selected.getName()
+                        + "\"?"
+        );
+
+        confirmation.showAndWait()
+                .ifPresent(
+                        response -> {
+
+                            if (response ==
+                                    ButtonType.OK) {
+
+                                speciesDAO.delete(
+                                        selected
+                                                .getSpeciesId()
+                                );
+
+                                loadSpecies();
+
+                                clearFields();
+
+                                showMessage(
+                                        Alert.AlertType.INFORMATION,
+                                        "Éxito",
+                                        "Especie eliminada correctamente."
+                                );
+                            }
+                        }
+                );
+    }
+
+    // =========================================================
+    // DATA
+    // =========================================================
+
+    private void loadSpecies() {
+
+        speciesList.setAll(
+                speciesDAO.list()
+        );
+    }
+
+    private void clearFields() {
+
+        if (speciesNameField != null) {
+
+            speciesNameField.clear();
+        }
+
+        table.getSelectionModel()
+                .clearSelection();
+    }
+
+    // =========================================================
+    // NAVIGATION
+    // =========================================================
+
+    private void showSection(
+            VBox section,
+            Button activeButton) {
+
+        sectionContainer
+                .getChildren()
+                .setAll(
+                        section
+                );
+
+        informationButton.setStyle(
+                normalSectionButtonStyle()
+        );
+
+        registeredButton.setStyle(
+                normalSectionButtonStyle()
+        );
+
+        activeButton.setStyle(
+                selectedSectionButtonStyle()
+        );
+    }
+
+    private Button createSectionButton(
+            String text) {
+
+        Button button =
+                new Button(text);
+
+        button.setPrefHeight(
+                40
+        );
+
+        button.setPadding(
+                new Insets(
+                        0,
+                        22,
+                        0,
+                        22
+                )
+        );
+
+        button.setStyle(
+                normalSectionButtonStyle()
+        );
+
+        return button;
+    }
+
+    private String normalSectionButtonStyle() {
+
+        return """
+                -fx-background-color: #E2E7E2;
+                -fx-text-fill: #254D3D;
+                -fx-font-weight: bold;
+                -fx-background-radius: 9;
+                """;
+    }
+
+    private String selectedSectionButtonStyle() {
+
+        return """
+                -fx-background-color: #254D3D;
+                -fx-text-fill: white;
+                -fx-font-weight: bold;
+                -fx-background-radius: 9;
+                """;
+    }
+
+    // =========================================================
+    // UI HELPERS
+    // =========================================================
+
+    private VBox createCard() {
+
+        VBox card =
+                new VBox(18);
+
+        card.setPadding(
+                new Insets(25)
+        );
+
+        card.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: #C9D2CB;" +
+                "-fx-border-radius: 14;"
+        );
+
+        return card;
+    }
+
+    private Label createSectionTitle(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-size: 20px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
+        );
+
+        return label;
+    }
+
+    private Label createFieldLabel(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #405047;"
+        );
+
+        return label;
+    }
+
+    private void applyPrimaryStyle(
+            Button button) {
+
+        button.setStyle(
+                "-fx-background-color: #254D3D;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
+
+    private void applySecondaryStyle(
+            Button button) {
+
+        button.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: #405047;" +
+                "-fx-font-weight: bold;" +
+                "-fx-border-color: #C9D2CB;" +
+                "-fx-border-radius: 8;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
+
+    private void applyDeleteStyle(
+            Button button) {
+
+        button.setStyle(
+                "-fx-background-color: #A34A4A;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
+
+    // =========================================================
+    // ALERT
+    // =========================================================
+
+    private void showMessage(
+            Alert.AlertType type,
+            String title,
+            String message) {
+
+        Alert alert =
+                new Alert(type);
+
+        alert.setTitle(
+                title
+        );
+
+        alert.setHeaderText(
+                null
+        );
+
+        alert.setContentText(
+                message
+        );
+
+        alert.showAndWait();
+    }
 }

@@ -1,7 +1,10 @@
 package com.tesina_tatu_carreta.view;
 
+import com.tesina_tatu_carreta.dao.AnimalHoldingDAO;
 import com.tesina_tatu_carreta.dao.EnclosureDAO;
+import com.tesina_tatu_carreta.model.AnimalInventorySummary;
 import com.tesina_tatu_carreta.model.Enclosure;
+import com.tesina_tatu_carreta.service.AnimalInventoryService;
 
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -9,9 +12,11 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -23,768 +28,1742 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class ViewEnclosures {
 
-        private final EnclosureDAO enclosureDAO = new EnclosureDAO();
+    private final EnclosureDAO enclosureDAO =
+            new EnclosureDAO();
 
-        private final ObservableList<Enclosure> listEnclosures = FXCollections.observableArrayList();
+    private final AnimalHoldingDAO animalHoldingDAO =
+            new AnimalHoldingDAO();
 
-        private Enclosure enclosureSelected;
+    private final ObservableList<Enclosure> enclosures =
+            FXCollections.observableArrayList();
 
-        private TableView<Enclosure> table;
+    private final ObservableList<AnimalInventorySummary>
+            inventorySummaries =
+            FXCollections.observableArrayList();
 
-        private TextField txtNombre;
-        private TextField txtSector;
-        private TextField txtCapacidad;
+    private TableView<Enclosure> enclosureTable;
 
-        private ComboBox<String> cmbEstado;
+    private TableView<AnimalInventorySummary> inventoryTable;
 
-        private TextArea txtObservaciones;
+    private TextField searchField;
 
-        public void show() {
+    private VBox contentContainer;
 
-                Stage escenario = new Stage();
+    private Button allButton;
+    private Button enclosuresButton;
+    private Button quarantineButton;
 
-                // =========================================
-                // HEADER
-                // =========================================
+    // =========================================================
+    // VIEW
+    // =========================================================
 
-                Label breadcrumb = new Label("Home / Enclosure Management");
+    public Parent getView() {
+        return createView();
+    }
 
-                breadcrumb.setStyle(
-                                "-fx-font-size: 12px;" +
-                                                "-fx-text-fill: #7A8580;");
+    public Parent createView() {
 
-                Label titulo = new Label("Enclosure Management");
+        VBox root = new VBox(20);
 
-                titulo.setStyle(
-                                "-fx-font-size: 28px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #2E4138;");
+        root.setPadding(
+                new Insets(25)
+        );
 
-                Label subtitulo = new Label(
-                                "Manage the reserve's enclosures");
+        root.setStyle(
+                "-fx-background-color: #F4F1E8;"
+        );
 
-                subtitulo.setStyle(
-                                "-fx-font-size: 14px;" +
-                                                "-fx-text-fill: #6B756F;");
+        Label title =
+                new Label(
+                        "Recintos"
+                );
 
-                VBox encabezado = new VBox(
-                                6,
-                                breadcrumb,
-                                titulo,
-                                subtitulo);
+        title.setStyle(
+                "-fx-font-size: 28px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
+        );
 
-                // =========================================
-                // FIELDS
-                // =========================================
+        Label subtitle =
+                new Label(
+                        "Administre los recintos y consulte la ubicación actual de los animales."
+                );
 
-                txtNombre = new TextField();
+        subtitle.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-text-fill: #405047;"
+        );
 
-                txtNombre.setPromptText(
-                                "Ex: Main aviary");
+        VBox header =
+                new VBox(
+                        5,
+                        title,
+                        subtitle
+                );
 
-                txtSector = new TextField();
+        HBox navigation =
+                createNavigation();
 
-                txtSector.setPromptText(
-                                "Ex: Sector A");
+        contentContainer =
+                new VBox();
 
-                txtCapacidad = new TextField();
+        contentContainer.setFillWidth(
+                true
+        );
 
-                txtCapacidad.setPromptText(
-                                "Ex: 50");
+        VBox.setVgrow(
+                contentContainer,
+                Priority.ALWAYS
+        );
 
-                cmbEstado = new ComboBox<>();
+        root.getChildren().addAll(
+                header,
+                navigation,
+                contentContainer
+        );
 
-                cmbEstado.getItems().addAll(
-                                "Active",
-                                "Inactive");
+        loadAllData();
 
-                cmbEstado.setValue("Active");
+        showAll();
 
-                txtObservaciones = new TextArea();
+        ScrollPane scrollPane =
+                new ScrollPane(root);
 
-                txtObservaciones.setPromptText(
-                                "Additional observations...");
+        scrollPane.setFitToWidth(
+                true
+        );
 
-                txtObservaciones.setPrefRowCount(3);
+        scrollPane.setFitToHeight(
+                true
+        );
 
-                txtObservaciones.setWrapText(true);
+        scrollPane.setStyle(
+                "-fx-background: #F4F1E8;"
+        );
 
-                // =========================================
-                // FIELD STYLE
-                // =========================================
+        return scrollPane;
+    }
 
-                String estiloCampo = "-fx-background-radius: 8;" +
-                                "-fx-border-radius: 8;" +
-                                "-fx-border-color: #D1D8D2;" +
-                                "-fx-padding: 8;";
+    // =========================================================
+    // NAVIGATION
+    // =========================================================
+
+    private HBox createNavigation() {
+
+        allButton =
+                createNavigationButton(
+                        "Todos"
+                );
+
+        enclosuresButton =
+                createNavigationButton(
+                        "Recintos"
+                );
+
+        quarantineButton =
+                createNavigationButton(
+                        "Cuarentena"
+                );
+
+        allButton.setOnAction(
+                event -> showAll()
+        );
+
+        enclosuresButton.setOnAction(
+                event -> showEnclosures()
+        );
 
-                txtNombre.setStyle(estiloCampo);
-                txtSector.setStyle(estiloCampo);
-                txtCapacidad.setStyle(estiloCampo);
-                cmbEstado.setStyle(estiloCampo);
-                txtObservaciones.setStyle(estiloCampo);
+        quarantineButton.setOnAction(
+                event -> showQuarantine()
+        );
 
-                txtNombre.setPrefHeight(38);
-                txtSector.setPrefHeight(38);
-                txtCapacidad.setPrefHeight(38);
-                cmbEstado.setPrefHeight(38);
+        HBox navigation =
+                new HBox(10);
 
-                // =========================================
-                // FORM
-                // =========================================
+        navigation.setAlignment(
+                Pos.CENTER_LEFT
+        );
 
-                Label lblNombre = crearLabelCampo("Name");
+        navigation.getChildren().addAll(
+                allButton,
+                enclosuresButton,
+                quarantineButton
+        );
 
-                Label lblSector = crearLabelCampo("Sector");
+        return navigation;
+    }
 
-                Label lblCapacidad = crearLabelCampo("Capacity");
+    private Button createNavigationButton(
+            String text) {
 
-                Label lblEstado = crearLabelCampo("Status");
+        Button button =
+                new Button(text);
 
-                Label lblObservaciones = crearLabelCampo("Observations");
+        button.setPrefHeight(
+                40
+        );
 
-                GridPane formulario = new GridPane();
+        button.setPadding(
+                new Insets(
+                        0,
+                        22,
+                        0,
+                        22
+                )
+        );
+
+        button.setStyle(
+                normalNavigationStyle()
+        );
 
-                formulario.setHgap(20);
-                formulario.setVgap(15);
+        return button;
+    }
 
-                formulario.add(
-                                lblNombre,
-                                0,
-                                0);
-
-                formulario.add(
-                                lblSector,
-                                1,
-                                0);
-
-                formulario.add(
-                                txtNombre,
-                                0,
-                                1);
-
-                formulario.add(
-                                txtSector,
-                                1,
-                                1);
-
-                formulario.add(
-                                lblCapacidad,
-                                0,
-                                2);
-
-                formulario.add(
-                                lblEstado,
-                                1,
-                                2);
-
-                formulario.add(
-                                txtCapacidad,
-                                0,
-                                3);
-
-                formulario.add(
-                                cmbEstado,
-                                1,
-                                3);
-
-                formulario.add(
-                                lblObservaciones,
-                                0,
-                                4,
-                                2,
-                                1);
-
-                formulario.add(
-                                txtObservaciones,
-                                0,
-                                5,
-                                2,
-                                1);
-
-                GridPane.setHgrow(
-                                txtNombre,
-                                Priority.ALWAYS);
-
-                GridPane.setHgrow(
-                                txtSector,
-                                Priority.ALWAYS);
-
-                GridPane.setHgrow(
-                                txtCapacidad,
-                                Priority.ALWAYS);
-
-                GridPane.setHgrow(
-                                cmbEstado,
-                                Priority.ALWAYS);
-
-                GridPane.setHgrow(
-                                txtObservaciones,
-                                Priority.ALWAYS);
-
-                // =========================================
-                // BUTTONS
-                // =========================================
-
-                Button btnLimpiar = new Button("CLEAR");
-
-                Button btnEliminar = new Button("DELETE");
-
-                Button btnModificar = new Button("EDIT");
-
-                Button btnGuardar = new Button("ADD");
-
-                Button btnVolver = new Button("BACK");
-
-                btnLimpiar.setPrefHeight(38);
-                btnEliminar.setPrefHeight(38);
-                btnModificar.setPrefHeight(38);
-                btnGuardar.setPrefHeight(38);
-                btnVolver.setPrefHeight(38);
-
-                btnLimpiar.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #405047;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #C9D2CB;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                btnEliminar.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #A34A4A;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #E2C5C5;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                btnModificar.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #405047;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #C9D2CB;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                btnGuardar.setStyle(
-                                "-fx-background-color: #254D3D;" +
-                                                "-fx-text-fill: white;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-background-radius: 8;");
-
-                btnVolver.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-text-fill: #405047;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-border-color: #C9D2CB;" +
-                                                "-fx-border-radius: 8;" +
-                                                "-fx-background-radius: 8;");
-
-                HBox botones = new HBox(
-                                10,
-                                btnLimpiar,
-                                btnEliminar,
-                                btnModificar,
-                                btnGuardar);
-
-                botones.setAlignment(
-                                Pos.CENTER_RIGHT);
-
-                // =========================================
-                // FORM CARD
-                // =========================================
-
-                Label tituloDatos = new Label("Enclosure Information");
-
-                tituloDatos.setStyle(
-                                "-fx-font-size: 19px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #2E4138;");
-
-                VBox tarjetaDatos = new VBox(
-                                20,
-                                tituloDatos,
-                                formulario,
-                                botones);
-
-                tarjetaDatos.setPadding(
-                                new Insets(25));
-
-                tarjetaDatos.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 16;" +
-                                                "-fx-border-color: #D8DED9;" +
-                                                "-fx-border-radius: 16;");
-
-                // =========================================
-                // TABLE
-                // =========================================
-
-                table = new TableView<>();
-
-                TableColumn<Enclosure, Number> colId = new TableColumn<>("ID");
-
-                colId.setCellValueFactory(
-                                celda -> new SimpleIntegerProperty(
-                                                celda.getValue()
-                                                                .getEnclosureId()));
-
-                TableColumn<Enclosure, String> colNombre = new TableColumn<>("Name");
-
-                colNombre.setCellValueFactory(
-                                celda -> new SimpleStringProperty(
-                                                celda.getValue()
-                                                                .getName()));
-
-                TableColumn<Enclosure, String> colSector = new TableColumn<>("Sector");
-
-                colSector.setCellValueFactory(
-                                celda -> new SimpleStringProperty(
-                                                celda.getValue()
-                                                                .getSector()));
-
-                TableColumn<Enclosure, Number> colCapacidad = new TableColumn<>("Capacity");
-
-                colCapacidad.setCellValueFactory(
-                                celda -> {
-
-                                        Integer capacidad = celda.getValue()
-                                                        .getCapacity();
-
-                                        if (capacidad == null) {
-
-                                                return new SimpleIntegerProperty(0);
-                                        }
-
-                                        return new SimpleIntegerProperty(
-                                                        capacidad);
-                                });
-
-                TableColumn<Enclosure, String> colEstado = new TableColumn<>("Status");
-
-                colEstado.setCellValueFactory(
-                                celda -> new SimpleStringProperty(
-                                                celda.getValue()
-                                                                .getStatus()));
-
-                table.getColumns().add(colId);
-                table.getColumns().add(colNombre);
-                table.getColumns().add(colSector);
-                table.getColumns().add(colCapacidad);
-                table.getColumns().add(colEstado);
-
-                table.setItems(
-                                listEnclosures);
-
-                table.setColumnResizePolicy(
-                                TableView.CONSTRAINED_RESIZE_POLICY);
-
-                table.setPrefHeight(280);
-
-                table.setMinHeight(220);
-
-                table.getSelectionModel()
-                                .selectedItemProperty()
-                                .addListener(
-                                                (observable,
-                                                                anterior,
-                                                                seleccionado) -> {
-
-                                                        if (seleccionado != null) {
-
-                                                                cargarenclosureSelected(
-                                                                                seleccionado);
-                                                        }
-                                                });
-
-                // =========================================
-                // TABLE CARD
-                // =========================================
-
-                Label tituloTabla = new Label("Registered Enclosures");
-
-                tituloTabla.setStyle(
-                                "-fx-font-size: 19px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #2E4138;");
-
-                VBox tarjetaTabla = new VBox(
-                                15,
-                                tituloTabla,
-                                table);
-
-                tarjetaTabla.setPadding(
-                                new Insets(25));
-
-                tarjetaTabla.setStyle(
-                                "-fx-background-color: white;" +
-                                                "-fx-background-radius: 16;" +
-                                                "-fx-border-color: #D8DED9;" +
-                                                "-fx-border-radius: 16;");
-
-                // =========================================
-                // BACK BUTTON
-                // =========================================
-
-                HBox contenedorVolver = new HBox(btnVolver);
-
-                contenedorVolver.setAlignment(
-                                Pos.CENTER);
-
-                // =========================================
-                // ACTIONS
-                // =========================================
-
-                btnGuardar.setOnAction(
-                                e -> guardar());
-
-                btnModificar.setOnAction(
-                                e -> modificar());
-
-                btnEliminar.setOnAction(
-                                e -> eliminar());
-
-                btnLimpiar.setOnAction(
-                                e -> limpiar());
-
-                btnVolver.setOnAction(
-                                e -> escenario.close());
-
-                // =========================================
-                // MAIN CONTAINER
-                // =========================================
-
-                VBox contenido = new VBox(
-                                25,
-                                encabezado,
-                                tarjetaDatos,
-                                tarjetaTabla,
-                                contenedorVolver);
-
-                contenido.setPadding(
-                                new Insets(25, 35, 35, 35));
-
-                contenido.setAlignment(
-                                Pos.TOP_CENTER);
-
-                contenido.setStyle(
-                                "-fx-background-color: #F4F1E8;");
-
-                // =========================================
-                // SCROLL
-                // =========================================
-
-                ScrollPane scroll = new ScrollPane(contenido);
-
-                scroll.setFitToWidth(true);
-
-                scroll.setStyle(
-                                "-fx-background: #F4F1E8;" +
-                                                "-fx-background-color: #F4F1E8;");
-
-                // =========================================
-                // SCENE
-                // =========================================
-
-                Scene escena = new Scene(
-                                scroll,
-                                1100,
-                                750);
-
-                escenario.setTitle(
-                                "Tatú Carreta - Enclosure Management");
-
-                escenario.setMinWidth(900);
-
-                escenario.setMinHeight(650);
-
-                escenario.setScene(escena);
-
-                escenario.setMaximized(true);
-
-                loadEnclosures();
-
-                escenario.show();
-        }
-
-        // =========================================
-        // CREATE LABEL
-        // =========================================
-
-        private Label crearLabelCampo(
-                        String texto) {
-
-                Label label = new Label(texto);
-
-                label.setStyle(
-                                "-fx-font-size: 13px;" +
-                                                "-fx-font-weight: bold;" +
-                                                "-fx-text-fill: #445149;");
-
-                return label;
-        }
-
-        // =========================================
-        // SAVE
-        // =========================================
-
-        private void guardar() {
-
-                String nombre = txtNombre.getText().trim();
-
-                String sector = txtSector.getText().trim();
-
-                String capacidadTexto = txtCapacidad.getText().trim();
-
-                String estado = cmbEstado.getValue();
-
-                String observaciones = txtObservaciones.getText().trim();
-
-                if (nombre.isBlank()
-                                || sector.isBlank()) {
-
-                        mostrarMensaje(
-                                        Alert.AlertType.WARNING,
-                                        "Please complete the required fields.");
+    private void setActiveNavigation(
+            Button activeButton) {
+
+        allButton.setStyle(
+                normalNavigationStyle()
+        );
+
+        enclosuresButton.setStyle(
+                normalNavigationStyle()
+        );
+
+        quarantineButton.setStyle(
+                normalNavigationStyle()
+        );
+
+        activeButton.setStyle(
+                selectedNavigationStyle()
+        );
+    }
+
+    private String normalNavigationStyle() {
+
+        return """
+                -fx-background-color: #E2E7E2;
+                -fx-text-fill: #254D3D;
+                -fx-font-weight: bold;
+                -fx-background-radius: 9;
+                """;
+    }
+
+    private String selectedNavigationStyle() {
+
+        return """
+                -fx-background-color: #254D3D;
+                -fx-text-fill: white;
+                -fx-font-weight: bold;
+                -fx-background-radius: 9;
+                """;
+    }
+
+    // =========================================================
+    // ALL
+    // =========================================================
+
+    private void showAll() {
+
+        setActiveNavigation(
+                allButton
+        );
+
+        loadAllData();
+
+        VBox container =
+                new VBox(20);
+
+        container.getChildren().add(
+                createOverviewCard()
+        );
+
+        HBox sections =
+                new HBox(20);
+
+        VBox enclosureCard =
+                createEnclosureSummaryCard();
+
+        VBox inventoryCard =
+                createInventorySummaryCard();
+
+        HBox.setHgrow(
+                enclosureCard,
+                Priority.ALWAYS
+        );
+
+        HBox.setHgrow(
+                inventoryCard,
+                Priority.ALWAYS
+        );
+
+        sections.getChildren().addAll(
+                enclosureCard,
+                inventoryCard
+        );
+
+        container.getChildren().add(
+                sections
+        );
+
+        contentContainer
+                .getChildren()
+                .setAll(
+                        container
+                );
+    }
+
+    private VBox createOverviewCard() {
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Resumen general"
+                );
+
+        HBox statistics =
+                new HBox(20);
+
+        statistics.setFillHeight(
+                true
+        );
+
+        VBox enclosureStat =
+                createStatistic(
+                        "RECINTOS",
+                        String.valueOf(
+                                enclosures.size()
+                        )
+                );
+
+        VBox quarantineStat =
+                createStatistic(
+                        "EN CUARENTENA",
+                        String.valueOf(
+                                getTotalQuantity(
+                                        AnimalInventoryService.QUARANTINE
+                                )
+                        )
+                );
+
+        VBox permanentStat =
+                createStatistic(
+                        "UBICACIÓN PERMANENTE",
+                        String.valueOf(
+                                getTotalQuantity(
+                                        AnimalInventoryService.PERMANENT
+                                )
+                        )
+                );
+
+        statistics.getChildren().addAll(
+                enclosureStat,
+                quarantineStat,
+                permanentStat
+        );
+
+        card.getChildren().addAll(
+                title,
+                statistics
+        );
+
+        return card;
+    }
+
+    private VBox createStatistic(
+            String label,
+            String value) {
+
+        VBox box =
+                new VBox(5);
+
+        box.setPadding(
+                new Insets(15)
+        );
+
+        box.setStyle(
+                "-fx-background-color: #F4F1E8;" +
+                "-fx-background-radius: 10;"
+        );
+
+        Label valueLabel =
+                new Label(value);
+
+        valueLabel.setStyle(
+                "-fx-font-size: 25px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
+        );
+
+        Label textLabel =
+                new Label(label);
+
+        textLabel.setStyle(
+                "-fx-font-size: 11px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #6B756F;"
+        );
+
+        box.getChildren().addAll(
+                valueLabel,
+                textLabel
+        );
+
+        HBox.setHgrow(
+                box,
+                Priority.ALWAYS
+        );
+
+        return box;
+    }
+
+    private VBox createEnclosureSummaryCard() {
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Recintos físicos"
+                );
+
+        Label description =
+                new Label(
+                        "Espacios disponibles para alojar animales."
+                );
+
+        description.setStyle(
+                "-fx-text-fill: #727A76;"
+        );
+
+        Button manageButton =
+                new Button(
+                        "VER RECINTOS"
+                );
+
+        applySecondaryStyle(
+                manageButton
+        );
+
+        manageButton.setOnAction(
+                event -> showEnclosures()
+        );
+
+        HBox actions =
+                new HBox(
+                        manageButton
+                );
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        card.getChildren().addAll(
+                title,
+                description,
+                actions
+        );
+
+        return card;
+    }
+
+    private VBox createInventorySummaryCard() {
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Ubicación de animales"
+                );
+
+        Label description =
+                new Label(
+                        "Consulte cuántos animales se encuentran en cuarentena o en ubicación permanente."
+                );
+
+        description.setWrapText(
+                true
+        );
+
+        description.setStyle(
+                "-fx-text-fill: #727A76;"
+        );
+
+        Button quarantine =
+                new Button(
+                        "VER CUARENTENA"
+                );
+
+        Button permanent =
+                new Button(
+                        "VER PERMANENTES"
+                );
+
+        applySecondaryStyle(
+                quarantine
+        );
+
+        applySecondaryStyle(
+                permanent
+        );
+
+        quarantine.setOnAction(
+                event -> showQuarantine()
+        );
+
+        permanent.setOnAction(
+                event -> showPermanentLocations()
+        );
+
+        HBox actions =
+                new HBox(
+                        10,
+                        quarantine,
+                        permanent
+                );
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        card.getChildren().addAll(
+                title,
+                description,
+                actions
+        );
+
+        return card;
+    }
+
+    // =========================================================
+    // ENCLOSURES
+    // =========================================================
+
+    private void showEnclosures() {
+
+        setActiveNavigation(
+                enclosuresButton
+        );
+
+        loadEnclosures();
+
+        VBox root =
+                new VBox(18);
+
+        root.getChildren().add(
+                createEnclosuresHeader()
+        );
+
+        root.getChildren().add(
+                createEnclosuresTableCard()
+        );
+
+        contentContainer
+                .getChildren()
+                .setAll(
+                        root
+                );
+    }
+
+    private HBox createEnclosuresHeader() {
+
+        Label title =
+                createSectionTitle(
+                        "Recintos físicos"
+                );
+
+        Label description =
+                new Label(
+                        "Administre los espacios disponibles para los animales."
+                );
+
+        description.setStyle(
+                "-fx-text-fill: #727A76;"
+        );
+
+        VBox text =
+                new VBox(
+                        4,
+                        title,
+                        description
+                );
+
+        Button addButton =
+                new Button(
+                        "+ NUEVO RECINTO"
+                );
+
+        applyPrimaryStyle(
+                addButton
+        );
+
+        addButton.setOnAction(
+                event -> openEnclosureForm()
+        );
+
+        HBox header =
+                new HBox(
+                        text,
+                        addButton
+                );
+
+        header.setAlignment(
+                Pos.CENTER_LEFT
+        );
+
+        HBox.setHgrow(
+                text,
+                Priority.ALWAYS
+        );
+
+        return header;
+    }
+
+    private VBox createEnclosuresTableCard() {
+
+        VBox card =
+                createCard();
+
+        HBox toolbar =
+                new HBox(10);
+
+        searchField =
+                new TextField();
+
+        searchField.setPromptText(
+                "Buscar por nombre o sector..."
+        );
+
+        searchField.setPrefWidth(
+                300
+        );
+
+        Button refreshButton =
+                new Button(
+                        "ACTUALIZAR"
+                );
+
+        applySecondaryStyle(
+                refreshButton
+        );
+
+        refreshButton.setOnAction(
+                event -> loadEnclosures()
+        );
+
+        toolbar.getChildren().addAll(
+                searchField,
+                refreshButton
+        );
+
+        enclosureTable =
+                new TableView<>();
+
+        configureEnclosureTable();
+
+        searchField.textProperty()
+                .addListener(
+                        (observable,
+                         oldValue,
+                         newValue) ->
+                                filterEnclosures(
+                                        newValue
+                                )
+                );
+
+        HBox actions =
+                new HBox(10);
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        Button editButton =
+                new Button(
+                        "EDITAR"
+                );
+
+        Button deleteButton =
+                new Button(
+                        "ELIMINAR"
+                );
+
+        applySecondaryStyle(
+                editButton
+        );
+
+        applyDeleteStyle(
+                deleteButton
+        );
+
+        editButton.setOnAction(
+                event -> {
+
+                    Enclosure selected =
+                            enclosureTable
+                                    .getSelectionModel()
+                                    .getSelectedItem();
+
+                    if (selected == null) {
+
+                        showMessage(
+                                Alert.AlertType.WARNING,
+                                "Sin selección",
+                                "Seleccione un recinto primero."
+                        );
 
                         return;
+                    }
+
+                    openEnclosureForm(
+                            selected
+                    );
                 }
+        );
 
-                Integer capacidad = null;
+        deleteButton.setOnAction(
+                event -> deleteEnclosure()
+        );
 
-                if (!capacidadTexto.isBlank()) {
+        actions.getChildren().addAll(
+                editButton,
+                deleteButton
+        );
 
-                        try {
+        card.getChildren().addAll(
+                toolbar,
+                enclosureTable,
+                actions
+        );
 
-                                capacidad = Integer.parseInt(
-                                                capacidadTexto);
+        VBox.setVgrow(
+                enclosureTable,
+                Priority.ALWAYS
+        );
 
-                        } catch (NumberFormatException e) {
+        return card;
+    }
 
-                                mostrarMensaje(
-                                                Alert.AlertType.WARNING,
-                                                "Capacity must be a number.");
+    private void configureEnclosureTable() {
 
-                                return;
+        enclosureTable.setItems(
+                enclosures
+        );
+
+        enclosureTable.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY
+        );
+
+        TableColumn<Enclosure, Number>
+                idColumn =
+                new TableColumn<>(
+                        "ID"
+                );
+
+        idColumn.setCellValueFactory(
+                data ->
+                        new SimpleIntegerProperty(
+                                data.getValue()
+                                        .getEnclosureId()
+                        )
+        );
+
+        TableColumn<Enclosure, String>
+                nameColumn =
+                new TableColumn<>(
+                        "Nombre"
+                );
+
+        nameColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getName()
+                        )
+        );
+
+        TableColumn<Enclosure, String>
+                sectorColumn =
+                new TableColumn<>(
+                        "Sector"
+                );
+
+        sectorColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getSector()
+                        )
+        );
+
+        TableColumn<Enclosure, Number>
+                capacityColumn =
+                new TableColumn<>(
+                        "Capacidad"
+                );
+
+        capacityColumn.setCellValueFactory(
+                data ->
+                        new SimpleIntegerProperty(
+                                data.getValue()
+                                        .getCapacity() == null
+                                        ? 0
+                                        : data.getValue()
+                                                .getCapacity()
+                        )
+        );
+
+        TableColumn<Enclosure, String>
+                statusColumn =
+                new TableColumn<>(
+                        "Estado"
+                );
+
+        statusColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                translateStatus(
+                                        data.getValue()
+                                                .getStatus()
+                                )
+                        )
+        );
+
+        enclosureTable
+                .getColumns()
+                .addAll(
+                        idColumn,
+                        nameColumn,
+                        sectorColumn,
+                        capacityColumn,
+                        statusColumn
+                );
+
+        enclosureTable.setPrefHeight(
+                430
+        );
+    }
+
+    private void filterEnclosures(
+            String text) {
+
+        String search =
+                text == null
+                        ? ""
+                        : text
+                                .trim()
+                                .toLowerCase();
+
+        if (search.isEmpty()) {
+
+            enclosureTable.setItems(
+                    enclosures
+            );
+
+            return;
+        }
+
+        ObservableList<Enclosure>
+                filtered =
+                FXCollections.observableArrayList();
+
+        for (Enclosure enclosure :
+                enclosures) {
+
+            String name =
+                    enclosure.getName() == null
+                            ? ""
+                            : enclosure.getName()
+                                    .toLowerCase();
+
+            String sector =
+                    enclosure.getSector() == null
+                            ? ""
+                            : enclosure.getSector()
+                                    .toLowerCase();
+
+            if (name.contains(search)
+                    || sector.contains(search)) {
+
+                filtered.add(
+                        enclosure
+                );
+            }
+        }
+
+        enclosureTable.setItems(
+                filtered
+        );
+    }
+
+    // =========================================================
+    // QUARANTINE
+    // =========================================================
+
+    private void showQuarantine() {
+
+        setActiveNavigation(
+                quarantineButton
+        );
+
+        loadInventory();
+
+        VBox root =
+                new VBox(18);
+
+        Label title =
+                createSectionTitle(
+                        "Animales en cuarentena"
+                );
+
+        Label description =
+                new Label(
+                        "Consulte los animales que actualmente se encuentran en cuarentena."
+                );
+
+        description.setStyle(
+                "-fx-text-fill: #727A76;"
+        );
+
+        VBox header =
+                new VBox(
+                        4,
+                        title,
+                        description
+                );
+
+        root.getChildren().add(
+                header
+        );
+
+        root.getChildren().add(
+                createQuarantineCard()
+        );
+
+        contentContainer
+                .getChildren()
+                .setAll(
+                        root
+                );
+    }
+
+    private VBox createQuarantineCard() {
+
+        VBox card =
+                createCard();
+
+        inventoryTable =
+                new TableView<>();
+
+        inventoryTable.setItems(
+                inventorySummaries
+        );
+
+        inventoryTable.setColumnResizePolicy(
+                TableView.CONSTRAINED_RESIZE_POLICY
+        );
+
+        TableColumn<AnimalInventorySummary, String>
+                animalColumn =
+                new TableColumn<>(
+                        "Animal"
+                );
+
+        animalColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getCommonName()
+                        )
+        );
+
+        TableColumn<AnimalInventorySummary, String>
+                scientificColumn =
+                new TableColumn<>(
+                        "Nombre científico"
+                );
+
+        scientificColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getScientificName()
+                        )
+        );
+
+        TableColumn<AnimalInventorySummary, Number>
+                quantityColumn =
+                new TableColumn<>(
+                        "Cantidad"
+                );
+
+        quantityColumn.setCellValueFactory(
+                data ->
+                        new SimpleIntegerProperty(
+                                data.getValue()
+                                        .getQuarantineQuantity()
+                        )
+        );
+
+        TableColumn<AnimalInventorySummary, String>
+                statusColumn =
+                new TableColumn<>(
+                        "Estado"
+                );
+
+        statusColumn.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                translateStatus(
+                                        data.getValue()
+                                                .getStatus()
+                                )
+                        )
+        );
+
+        inventoryTable
+                .getColumns()
+                .addAll(
+                        animalColumn,
+                        scientificColumn,
+                        quantityColumn,
+                        statusColumn
+                );
+
+        inventoryTable.setPrefHeight(
+                430
+        );
+
+        card.getChildren().add(
+                inventoryTable
+        );
+
+        return card;
+    }
+
+    // =========================================================
+    // ENCLOSURE FORM
+    // =========================================================
+
+    private void openEnclosureForm() {
+
+        openEnclosureForm(
+                null
+        );
+    }
+
+    private void openEnclosureForm(
+            Enclosure enclosure) {
+
+        boolean editing =
+                enclosure != null;
+
+        VBox content =
+                new VBox(18);
+
+        content.setPadding(
+                new Insets(25)
+        );
+
+        Label title =
+                createSectionTitle(
+                        editing
+                                ? "Editar recinto"
+                                : "Nuevo recinto"
+                );
+
+        GridPane form =
+                new GridPane();
+
+        form.setHgap(15);
+        form.setVgap(15);
+
+        TextField name =
+                new TextField(
+                        editing
+                                ? enclosure.getName()
+                                : ""
+                );
+
+        TextField sector =
+                new TextField(
+                        editing
+                                ? enclosure.getSector()
+                                : ""
+                );
+
+        TextField capacity =
+                new TextField(
+                        editing
+                                && enclosure.getCapacity() != null
+                                ? String.valueOf(
+                                        enclosure.getCapacity()
+                                )
+                                : ""
+                );
+
+        ComboBox<String> status =
+                new ComboBox<>();
+
+        status.getItems().addAll(
+                "Active",
+                "Inactive"
+        );
+
+        status.setValue(
+                editing
+                        ? enclosure.getStatus()
+                        : "Active"
+        );
+
+        TextArea observations =
+                new TextArea(
+                        editing
+                                && enclosure.getObservations() != null
+                                ? enclosure.getObservations()
+                                : ""
+                );
+
+        observations.setWrapText(
+                true
+        );
+
+        observations.setPrefRowCount(
+                4
+        );
+
+        form.add(
+                createFieldLabel("Nombre"),
+                0,
+                0
+        );
+
+        form.add(
+                name,
+                1,
+                0
+        );
+
+        form.add(
+                createFieldLabel("Sector"),
+                0,
+                1
+        );
+
+        form.add(
+                sector,
+                1,
+                1
+        );
+
+        form.add(
+                createFieldLabel("Capacidad"),
+                0,
+                2
+        );
+
+        form.add(
+                capacity,
+                1,
+                2
+        );
+
+        form.add(
+                createFieldLabel("Estado"),
+                0,
+                3
+        );
+
+        form.add(
+                status,
+                1,
+                3
+        );
+
+        form.add(
+                createFieldLabel("Observaciones"),
+                0,
+                4
+        );
+
+        form.add(
+                observations,
+                1,
+                4
+        );
+
+        GridPane.setHgrow(
+                name,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                sector,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                capacity,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                status,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                observations,
+                Priority.ALWAYS
+        );
+
+        Button cancelButton =
+                new Button(
+                        "CANCELAR"
+                );
+
+        Button saveButton =
+                new Button(
+                        editing
+                                ? "GUARDAR CAMBIOS"
+                                : "CREAR RECINTO"
+                );
+
+        applySecondaryStyle(
+                cancelButton
+        );
+
+        applyPrimaryStyle(
+                saveButton
+        );
+
+        VBox modal =
+                createCard();
+
+        modal.getChildren().addAll(
+                title,
+                form
+        );
+
+        HBox actions =
+                new HBox(
+                        10,
+                        cancelButton,
+                        saveButton
+                );
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        modal.getChildren().add(
+                actions
+        );
+
+        Stage stage =
+                createModalStage(
+                        editing
+                                ? "Editar recinto"
+                                : "Nuevo recinto",
+                        modal
+                );
+
+        cancelButton.setOnAction(
+                event -> stage.close()
+        );
+
+        saveButton.setOnAction(
+                event -> {
+
+                    try {
+
+                        saveEnclosure(
+                                enclosure,
+                                name,
+                                sector,
+                                capacity,
+                                status,
+                                observations
+                        );
+
+                        stage.close();
+
+                        loadEnclosures();
+
+                        if (contentContainer != null) {
+                            showEnclosures();
                         }
+
+                    } catch (Exception exception) {
+
+                        showMessage(
+                                Alert.AlertType.WARNING,
+                                "Error de validación",
+                                exception.getMessage()
+                        );
+                    }
                 }
+        );
 
-                Enclosure enclosure = new Enclosure();
+        stage.showAndWait();
+    }
 
-                enclosure.setName(nombre);
+    private void saveEnclosure(
+            Enclosure enclosure,
+            TextField nameField,
+            TextField sectorField,
+            TextField capacityField,
+            ComboBox<String> statusComboBox,
+            TextArea observationsField) {
 
-                enclosure.setSector(sector);
+        String name =
+                nameField.getText()
+                        .trim();
 
-                enclosure.setCapacity(capacidad);
+        String sector =
+                sectorField.getText()
+                        .trim();
 
-                enclosure.setStatus(estado);
+        if (name.isEmpty()
+                || sector.isEmpty()) {
 
-                enclosure.setObservations(
-                                observaciones);
-
-                enclosureDAO.add(enclosure);
-
-                loadEnclosures();
-
-                limpiar();
-
-                mostrarMensaje(
-                                Alert.AlertType.INFORMATION,
-                                "Enclosure added successfully.");
+            throw new IllegalArgumentException(
+                    "El nombre y el sector son obligatorios."
+            );
         }
 
-        // =========================================
-        // EDIT
-        // =========================================
+        Integer capacity =
+                null;
 
-        private void modificar() {
+        String capacityText =
+                capacityField.getText()
+                        .trim();
 
-                if (enclosureSelected == null) {
+        if (!capacityText.isEmpty()) {
 
-                        mostrarMensaje(
-                                        Alert.AlertType.WARNING,
-                                        "Select an enclosure to edit.");
+            try {
 
-                        return;
-                }
+                capacity =
+                        Integer.parseInt(
+                                capacityText
+                        );
 
-                String nombre = txtNombre.getText().trim();
+            } catch (NumberFormatException exception) {
 
-                String sector = txtSector.getText().trim();
+                throw new IllegalArgumentException(
+                        "La capacidad debe ser un número válido."
+                );
+            }
 
-                String capacidadTexto = txtCapacidad.getText().trim();
+            if (capacity < 0) {
 
-                if (nombre.isBlank()
-                                || sector.isBlank()) {
+                throw new IllegalArgumentException(
+                        "La capacidad no puede ser negativa."
+                );
+            }
+        }
 
-                        mostrarMensaje(
-                                        Alert.AlertType.WARNING,
-                                        "Please complete the required fields.");
+        if (statusComboBox.getValue() == null) {
 
-                        return;
-                }
+            throw new IllegalArgumentException(
+                    "Seleccione un estado."
+            );
+        }
 
-                Integer capacidad = null;
+        if (enclosure == null) {
 
-                if (!capacidadTexto.isBlank()) {
+            Enclosure newEnclosure =
+                    new Enclosure();
 
-                        try {
+            newEnclosure.setName(
+                    name
+            );
 
-                                capacidad = Integer.parseInt(
-                                                capacidadTexto);
+            newEnclosure.setSector(
+                    sector
+            );
 
-                        } catch (NumberFormatException e) {
+            newEnclosure.setCapacity(
+                    capacity
+            );
 
-                                mostrarMensaje(
-                                                Alert.AlertType.WARNING,
-                                                "Capacity must be a number.");
+            newEnclosure.setStatus(
+                    statusComboBox.getValue()
+            );
 
-                                return;
+            newEnclosure.setObservations(
+                    observationsField
+                            .getText()
+                            .trim()
+            );
+
+            enclosureDAO.add(
+                    newEnclosure
+            );
+
+            showMessage(
+                    Alert.AlertType.INFORMATION,
+                    "Operación exitosa",
+                    "El recinto fue creado correctamente."
+            );
+
+        } else {
+
+            enclosure.setName(
+                    name
+            );
+
+            enclosure.setSector(
+                    sector
+            );
+
+            enclosure.setCapacity(
+                    capacity
+            );
+
+            enclosure.setStatus(
+                    statusComboBox.getValue()
+            );
+
+            enclosure.setObservations(
+                    observationsField
+                            .getText()
+                            .trim()
+            );
+
+            enclosureDAO.update(
+                    enclosure
+            );
+
+            showMessage(
+                    Alert.AlertType.INFORMATION,
+                    "Operación exitosa",
+                    "El recinto fue actualizado correctamente."
+            );
+        }
+    }
+
+    // =========================================================
+    // DELETE
+    // =========================================================
+
+    private void deleteEnclosure() {
+
+        Enclosure selected =
+                enclosureTable
+                        .getSelectionModel()
+                        .getSelectedItem();
+
+        if (selected == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Seleccione un recinto primero."
+            );
+
+            return;
+        }
+
+        Alert confirmation =
+                new Alert(
+                        Alert.AlertType.CONFIRMATION
+                );
+
+        confirmation.setTitle(
+                "Eliminar recinto"
+        );
+
+        confirmation.setHeaderText(
+                null
+        );
+
+        confirmation.setContentText(
+                "¿Está seguro de que desea eliminar el recinto \""
+                        + selected.getName()
+                        + "\"?"
+        );
+
+        confirmation.showAndWait()
+                .ifPresent(
+                        response -> {
+
+                            if (response ==
+                                    ButtonType.OK) {
+
+                                enclosureDAO.delete(
+                                        selected
+                                                .getEnclosureId()
+                                );
+
+                                loadEnclosures();
+
+                                showEnclosures();
+
+                                showMessage(
+                                        Alert.AlertType.INFORMATION,
+                                        "Operación exitosa",
+                                        "El recinto fue eliminado correctamente."
+                                );
+                            }
                         }
-                }
+                );
+    }
 
-                enclosureSelected.setName(
-                                nombre);
+    // =========================================================
+    // DATA
+    // =========================================================
 
-                enclosureSelected.setSector(
-                                sector);
+    private void loadAllData() {
 
-                enclosureSelected.setCapacity(
-                                capacidad);
+        loadEnclosures();
+        loadInventory();
+    }
 
-                enclosureSelected.setStatus(
-                                cmbEstado.getValue());
+    private void loadEnclosures() {
 
-                enclosureSelected.setObservations(
-                                txtObservaciones
-                                                .getText()
-                                                .trim());
+        try {
 
-                enclosureDAO.update(
-                                enclosureSelected);
+            enclosures.setAll(
+                    enclosureDAO.list()
+            );
 
-                loadEnclosures();
+        } catch (Exception exception) {
 
-                limpiar();
+            showMessage(
+                    Alert.AlertType.ERROR,
+                    "Error",
+                    "No se pudieron cargar los recintos."
+            );
+        }
+    }
 
-                mostrarMensaje(
-                                Alert.AlertType.INFORMATION,
-                                "Enclosure updated successfully.");
+    private void loadInventory() {
+
+        try {
+
+            inventorySummaries.setAll(
+                    animalHoldingDAO
+                            .listInventorySummary()
+            );
+
+        } catch (Exception exception) {
+
+            showMessage(
+                    Alert.AlertType.ERROR,
+                    "Error",
+                    "No se pudo cargar el inventario de animales."
+            );
+        }
+    }
+
+    private int getTotalQuantity(
+            String location) {
+
+        return animalHoldingDAO
+                .getTotalQuantity(
+                        location
+                );
+    }
+
+    // =========================================================
+    // PERMANENT LOCATIONS
+    // =========================================================
+
+    private void showPermanentLocations() {
+
+        ViewPermanentEnclosure view =
+                new ViewPermanentEnclosure();
+
+        Stage stage =
+                createModalStage(
+                        "Ubicaciones permanentes",
+                        view.getView()
+                );
+
+        stage.setMinWidth(
+                900
+        );
+
+        stage.setMinHeight(
+                650
+        );
+
+        stage.showAndWait();
+    }
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+
+    private VBox createCard() {
+
+        VBox card =
+                new VBox(15);
+
+        card.setPadding(
+                new Insets(22)
+        );
+
+        card.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: #C9D2CB;" +
+                "-fx-border-radius: 14;"
+        );
+
+        return card;
+    }
+
+    private Label createSectionTitle(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-size: 20px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
+        );
+
+        return label;
+    }
+
+    private Label createFieldLabel(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #405047;"
+        );
+
+        return label;
+    }
+
+    private Stage createModalStage(
+            String title,
+            Parent content) {
+
+        Stage stage =
+                new Stage();
+
+        stage.setTitle(
+                title
+        );
+
+        stage.initModality(
+                Modality.APPLICATION_MODAL
+        );
+
+        stage.setMinWidth(
+                650
+        );
+
+        stage.setMinHeight(
+                500
+        );
+
+        stage.setScene(
+                new Scene(
+                        new ScrollPane(content),
+                        700,
+                        600
+                )
+        );
+
+        return stage;
+    }
+
+    private String translateStatus(
+            String value) {
+
+        if (value == null) {
+            return "";
         }
 
-        // =========================================
-        // DELETE
-        // =========================================
+        return switch (value) {
 
-        private void eliminar() {
+            case "Active" ->
+                    "Activo";
 
-                if (enclosureSelected == null) {
+            case "Inactive" ->
+                    "Inactivo";
 
-                        mostrarMensaje(
-                                        Alert.AlertType.WARNING,
-                                        "Select an enclosure to delete.");
+            default ->
+                    value;
+        };
+    }
 
-                        return;
-                }
+    private void applyPrimaryStyle(
+            Button button) {
 
-                enclosureDAO.delete(
-                                enclosureSelected
-                                                .getEnclosureId());
+        button.setStyle(
+                "-fx-background-color: #254D3D;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
 
-                loadEnclosures();
+    private void applySecondaryStyle(
+            Button button) {
 
-                limpiar();
+        button.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: #405047;" +
+                "-fx-font-weight: bold;" +
+                "-fx-border-color: #C9D2CB;" +
+                "-fx-border-radius: 8;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
 
-                mostrarMensaje(
-                                Alert.AlertType.INFORMATION,
-                                "Enclosure deleted successfully.");
-        }
+    private void applyDeleteStyle(
+            Button button) {
 
-        // =========================================
-        // LOAD SELECTED
-        // =========================================
+        button.setStyle(
+                "-fx-background-color: #A34A4A;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
 
-        private void cargarenclosureSelected(
-                        Enclosure enclosure) {
+    private void showMessage(
+            Alert.AlertType type,
+            String title,
+            String message) {
 
-                enclosureSelected = enclosure;
+        Alert alert =
+                new Alert(type);
 
-                txtNombre.setText(
-                                enclosure.getName());
+        alert.setTitle(
+                title
+        );
 
-                txtSector.setText(
-                                enclosure.getSector());
+        alert.setHeaderText(
+                null
+        );
 
-                if (enclosure.getCapacity() != null) {
+        alert.setContentText(
+                message
+        );
 
-                        txtCapacidad.setText(
-                                        String.valueOf(
-                                                        enclosure.getCapacity()));
-
-                } else {
-
-                        txtCapacidad.clear();
-                }
-
-                cmbEstado.setValue(
-                                enclosure.getStatus());
-
-                txtObservaciones.setText(
-                                enclosure.getObservations());
-        }
-
-        // =========================================
-        // LOAD TABLE
-        // =========================================
-
-        private void loadEnclosures() {
-
-                listEnclosures.setAll(
-                                enclosureDAO.list());
-        }
-
-        // =========================================
-        // CLEAR
-        // =========================================
-
-        private void limpiar() {
-
-                enclosureSelected = null;
-
-                txtNombre.clear();
-
-                txtSector.clear();
-
-                txtCapacidad.clear();
-
-                cmbEstado.setValue("Active");
-
-                txtObservaciones.clear();
-
-                table.getSelectionModel()
-                                .clearSelection();
-        }
-
-        // =========================================
-        // MESSAGES
-        // =========================================
-
-        private void mostrarMensaje(
-                        Alert.AlertType tipo,
-                        String mensaje) {
-
-                Alert alerta = new Alert(tipo);
-
-                alerta.setTitle("Tatú Carreta");
-
-                alerta.setHeaderText(null);
-
-                alerta.setContentText(mensaje);
-
-                alerta.showAndWait();
-        }
+        alert.showAndWait();
+    }
 }

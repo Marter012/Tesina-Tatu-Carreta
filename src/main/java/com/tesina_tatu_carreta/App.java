@@ -12,15 +12,7 @@ public class App extends Application {
     public void start(Stage stage) {
 
         // Create the required database tables if they do not exist
-        DatabaseInitializer.createSpeciesTable();
-        DatabaseInitializer.createAnimalsTable();
-        DatabaseInitializer.createEntriesTable();
-        DatabaseInitializer.createEntryDetailsTable();
-        DatabaseInitializer.createEnclosuresTable();
-        DatabaseInitializer.createPermanentStaffTable();
-        DatabaseInitializer.createMovementsTable();
-        DatabaseInitializer.createIdentificationsTable();
-        DatabaseInitializer.createUsersTable();
+        DatabaseInitializer.initialize();;
 
         // Open login window
         ViewLogin loginWindow = new ViewLogin();

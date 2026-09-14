@@ -3,20 +3,32 @@ package com.tesina_tatu_carreta.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class SQLiteConnection {
 
-    private static final String URL = "jdbc:sqlite:tatu_carreta.db";
+    private static final String DATABASE_URL =
+            "jdbc:sqlite:tatu_carreta.db";
 
-    public static Connection connect() {
-        Connection connection = null;
+    private SQLiteConnection() {
+    }
 
-        try {
-            connection = DriverManager.getConnection(URL);
-            System.out.println("SQLite connection successful.");
-        } catch (SQLException e) {
-            System.out.println("Error connecting to SQLite.");
-            System.out.println(e.getMessage());
+    public static Connection connect()
+            throws SQLException {
+
+        Connection connection =
+                DriverManager.getConnection(
+                        DATABASE_URL
+                );
+
+        try (
+                Statement statement =
+                        connection.createStatement()
+        ) {
+
+            statement.execute(
+                    "PRAGMA foreign_keys = ON"
+            );
         }
 
         return connection;

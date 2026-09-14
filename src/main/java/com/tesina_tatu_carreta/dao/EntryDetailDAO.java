@@ -1,37 +1,45 @@
 package com.tesina_tatu_carreta.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.tesina_tatu_carreta.database.SQLiteConnection;
 import com.tesina_tatu_carreta.model.EntryDetail;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+
 public class EntryDetailDAO {
 
-    public void add(EntryDetail detail) {
+    public void add(
+            Connection connection,
+            EntryDetail detail)
+            throws SQLException {
 
         String sql = """
-                INSERT INTO detalle_ingreso (
-                    id_ingreso,
-                    id_animal,
-                    cantidad,
-                    sexo,
-                    edad,
-                    peso,
-                    estado_ingreso,
-                    observaciones
+                INSERT INTO entry_details
+                (
+                    entry_id,
+                    animal_id,
+                    enclosure_id,
+                    quantity,
+                    sex,
+                    age,
+                    weight,
+                    destination,
+                    entry_status,
+                    observations
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
+        try (PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
-            statement.setInt(
+            setNullableEntryId(
+                    statement,
                     1,
                     detail.getEntryId()
             );
@@ -41,74 +49,132 @@ public class EntryDetailDAO {
                     detail.getAnimalId()
             );
 
+            if (detail.getEnclosureId() != null) {
+
+                statement.setInt(
+                        3,
+                        detail.getEnclosureId()
+                );
+
+            } else {
+
+                statement.setNull(
+                        3,
+                        Types.INTEGER
+                );
+            }
+
             statement.setInt(
-                    3,
+                    4,
                     detail.getQuantity()
             );
 
             statement.setString(
-                    4,
+                    5,
                     detail.getSex()
             );
 
             statement.setString(
-                    5,
+                    6,
                     detail.getAge()
             );
 
             statement.setDouble(
-                    6,
+                    7,
                     detail.getWeight()
             );
 
             statement.setString(
-                    7,
+                    8,
+                    detail.getDestination()
+            );
+
+            statement.setString(
+                    9,
                     detail.getEntryStatus()
             );
 
             statement.setString(
-                    8,
+                    10,
                     detail.getObservations()
             );
 
             statement.executeUpdate();
-
-            System.out.println(
-                    "Entry detail added successfully."
-            );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error adding entry detail."
-            );
-
-            System.out.println(e.getMessage());
         }
     }
 
-    public List<EntryDetail> listByEntry(int entryId) {
+    public List<EntryDetail> listByEntry(
+            int entryId) {
 
-        List<EntryDetail> details = new ArrayList<>();
+        List<EntryDetail> details =
+                new ArrayList<>();
 
         String sql = """
                 SELECT
-                    id_detalle,
-                    id_ingreso,
-                    id_animal,
-                    cantidad,
-                    sexo,
-                    edad,
-                    peso,
-                    estado_ingreso,
-                    observaciones
-                FROM detalle_ingreso
-                WHERE id_ingreso = ?
-                ORDER BY id_detalle
+                    detail_id,
+                    entry_id,
+                    animal_id,
+                    enclosure_id,
+                    quantity,
+                    sex,
+                    age,
+                    weight,
+                    destination,
+                    entry_status,
+                    observations
+                FROM entry_details
+                WHERE entry_id = ?
+                ORDER BY detail_id
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    entryId
+            );
+
+            try (
+                    ResultSet resultSet =
+                            statement.executeQuery()
+            ) {
+
+                while (resultSet.next()) {
+
+                    details.add(
+                            map(resultSet)
+                    );
+                }
+            }
+
+        } catch (SQLException exception) {
+
+            throw new RuntimeException(
+                    "Error loading entry details.",
+                    exception
+            );
+        }
+
+        return details;
+    }
+
+    public void deleteByEntry(
+            Connection connection,
+            int entryId)
+            throws SQLException {
+
+        String sql = """
+                DELETE FROM entry_details
+                WHERE entry_id = ?
+                """;
+
+        try (PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
             statement.setInt(
@@ -116,174 +182,129 @@ public class EntryDetailDAO {
                     entryId
             );
 
-            try (ResultSet result =
-                         statement.executeQuery()) {
-
-                while (result.next()) {
-
-                    EntryDetail detail =
-                            new EntryDetail();
-
-                    detail.setDetailId(
-                            result.getInt("id_detalle")
-                    );
-
-                    detail.setEntryId(
-                            result.getInt("id_ingreso")
-                    );
-
-                    detail.setAnimalId(
-                            result.getInt("id_animal")
-                    );
-
-                    detail.setQuantity(
-                            result.getInt("cantidad")
-                    );
-
-                    detail.setSex(
-                            result.getString("sexo")
-                    );
-
-                    detail.setAge(
-                            result.getString("edad")
-                    );
-
-                    detail.setWeight(
-                            result.getDouble("peso")
-                    );
-
-                    detail.setEntryStatus(
-                            result.getString(
-                                    "estado_ingreso"
-                            )
-                    );
-
-                    detail.setObservations(
-                            result.getString(
-                                    "observaciones"
-                            )
-                    );
-
-                    details.add(detail);
-                }
-            }
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error listing entry details."
-            );
-
-            System.out.println(e.getMessage());
-        }
-
-        return details;
-    }
-
-    public void update(EntryDetail detail) {
-
-        String sql = """
-                UPDATE detalle_ingreso
-                SET
-                    id_animal = ?,
-                    cantidad = ?,
-                    sexo = ?,
-                    edad = ?,
-                    peso = ?,
-                    estado_ingreso = ?,
-                    observaciones = ?
-                WHERE id_detalle = ?
-                """;
-
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
-
-            statement.setInt(
-                    1,
-                    detail.getAnimalId()
-            );
-
-            statement.setInt(
-                    2,
-                    detail.getQuantity()
-            );
-
-            statement.setString(
-                    3,
-                    detail.getSex()
-            );
-
-            statement.setString(
-                    4,
-                    detail.getAge()
-            );
-
-            statement.setDouble(
-                    5,
-                    detail.getWeight()
-            );
-
-            statement.setString(
-                    6,
-                    detail.getEntryStatus()
-            );
-
-            statement.setString(
-                    7,
-                    detail.getObservations()
-            );
-
-            statement.setInt(
-                    8,
-                    detail.getDetailId()
-            );
-
             statement.executeUpdate();
-
-            System.out.println(
-                    "Entry detail updated successfully."
-            );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error updating entry detail."
-            );
-
-            System.out.println(e.getMessage());
         }
     }
 
-    public void delete(int detailId) {
+    private Integer getNullableEntryId(
+            ResultSet resultSet)
+            throws SQLException {
 
-        String sql = """
-                DELETE FROM detalle_ingreso
-                WHERE id_detalle = ?
-                """;
+        int value =
+                resultSet.getInt("entry_id");
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        if (resultSet.wasNull()) {
+            return null;
+        }
+
+        return value;
+    }
+
+    private Integer getNullableEnclosureId(
+            ResultSet resultSet)
+            throws SQLException {
+
+        int value =
+                resultSet.getInt("enclosure_id");
+
+        if (resultSet.wasNull()) {
+            return null;
+        }
+
+        return value;
+    }
+
+    private void setNullableEntryId(
+            PreparedStatement statement,
+            int parameterIndex,
+            Integer entryId)
+            throws SQLException {
+
+        if (entryId == null) {
+
+            statement.setNull(
+                    parameterIndex,
+                    Types.INTEGER
+            );
+
+        } else {
 
             statement.setInt(
-                    1,
-                    detailId
+                    parameterIndex,
+                    entryId
             );
-
-            statement.executeUpdate();
-
-            System.out.println(
-                    "Entry detail deleted successfully."
-            );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error deleting entry detail."
-            );
-
-            System.out.println(e.getMessage());
         }
+    }
+
+    private EntryDetail map(
+            ResultSet resultSet)
+            throws SQLException {
+
+        EntryDetail detail =
+                new EntryDetail();
+
+        detail.setDetailId(
+                resultSet.getInt(
+                        "detail_id"
+                )
+        );
+
+        detail.setEntryId(
+                getNullableEntryId(resultSet)
+        );
+
+        detail.setAnimalId(
+                resultSet.getInt(
+                        "animal_id"
+                )
+        );
+
+        detail.setEnclosureId(
+                getNullableEnclosureId(resultSet)
+        );
+
+        detail.setQuantity(
+                resultSet.getInt(
+                        "quantity"
+                )
+        );
+
+        detail.setSex(
+                resultSet.getString(
+                        "sex"
+                )
+        );
+
+        detail.setAge(
+                resultSet.getString(
+                        "age"
+                )
+        );
+
+        detail.setWeight(
+                resultSet.getDouble(
+                        "weight"
+                )
+        );
+
+        detail.setDestination(
+                resultSet.getString(
+                        "destination"
+                )
+        );
+
+        detail.setEntryStatus(
+                resultSet.getString(
+                        "entry_status"
+                )
+        );
+
+        detail.setObservations(
+                resultSet.getString(
+                        "observations"
+                )
+        );
+
+        return detail;
     }
 }

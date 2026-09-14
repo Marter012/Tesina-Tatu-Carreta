@@ -1,37 +1,50 @@
 package com.tesina_tatu_carreta.dao;
 
+import com.tesina_tatu_carreta.database.SQLiteConnection;
+import com.tesina_tatu_carreta.model.Species;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.tesina_tatu_carreta.database.SQLiteConnection;
-import com.tesina_tatu_carreta.model.Species;
-
 public class SpeciesDAO {
+
+    // =========================================================
+    // ADD
+    // =========================================================
 
     public void add(Species species) {
 
         String sql = """
-                INSERT INTO especies (nombre)
+                INSERT INTO species (name)
                 VALUES (?)
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (Connection connection = SQLiteConnection.connect()) {
 
-            statement.setString(
-                    1,
-                    species.getName()
-            );
+            if (connection == null) {
+                System.out.println(
+                        "Error: Could not connect to database."
+                );
+                return;
+            }
 
-            statement.executeUpdate();
+            try (PreparedStatement statement =
+                         connection.prepareStatement(sql)) {
 
-            System.out.println(
-                    "Species added successfully."
-            );
+                statement.setString(
+                        1,
+                        species.getName()
+                );
+
+                statement.executeUpdate();
+
+                System.out.println(
+                        "Species added successfully."
+                );
+            }
 
         } catch (Exception e) {
 
@@ -39,39 +52,54 @@ public class SpeciesDAO {
                     "Error adding species."
             );
 
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
+    // =========================================================
+    // LIST
+    // =========================================================
+
     public List<Species> list() {
 
-        List<Species> speciesList = new ArrayList<>();
+        List<Species> speciesList =
+                new ArrayList<>();
 
         String sql = """
-                SELECT id_especie, nombre
-                FROM especies
-                ORDER BY nombre
+                SELECT species_id, name
+                FROM species
+                ORDER BY name ASC
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql);
-             ResultSet result =
-                     statement.executeQuery()) {
+        try (Connection connection = SQLiteConnection.connect()) {
 
-            while (result.next()) {
-
-                Species species = new Species();
-
-                species.setSpeciesId(
-                        result.getInt("id_especie")
+            if (connection == null) {
+                System.out.println(
+                        "Error: Could not connect to database."
                 );
+                return speciesList;
+            }
 
-                species.setName(
-                        result.getString("nombre")
-                );
+            try (PreparedStatement statement =
+                         connection.prepareStatement(sql);
+                 ResultSet result =
+                         statement.executeQuery()) {
 
-                speciesList.add(species);
+                while (result.next()) {
+
+                    Species species =
+                            new Species();
+
+                    species.setSpeciesId(
+                            result.getInt("species_id")
+                    );
+
+                    species.setName(
+                            result.getString("name")
+                    );
+
+                    speciesList.add(species);
+                }
             }
 
         } catch (Exception e) {
@@ -80,39 +108,63 @@ public class SpeciesDAO {
                     "Error listing species."
             );
 
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
 
         return speciesList;
     }
 
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
     public void update(Species species) {
 
         String sql = """
-                UPDATE especies
-                SET nombre = ?
-                WHERE id_especie = ?
+                UPDATE species
+                SET name = ?
+                WHERE species_id = ?
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (Connection connection = SQLiteConnection.connect()) {
 
-            statement.setString(
-                    1,
-                    species.getName()
-            );
+            if (connection == null) {
+                System.out.println(
+                        "Error: Could not connect to database."
+                );
+                return;
+            }
 
-            statement.setInt(
-                    2,
-                    species.getSpeciesId()
-            );
+            try (PreparedStatement statement =
+                         connection.prepareStatement(sql)) {
 
-            statement.executeUpdate();
+                statement.setString(
+                        1,
+                        species.getName()
+                );
 
-            System.out.println(
-                    "Species updated successfully."
-            );
+                statement.setInt(
+                        2,
+                        species.getSpeciesId()
+                );
+
+                int rowsAffected =
+                        statement.executeUpdate();
+
+                if (rowsAffected > 0) {
+
+                    System.out.println(
+                            "Species updated successfully."
+                    );
+
+                } else {
+
+                    System.out.println(
+                            "No species found with ID: "
+                                    + species.getSpeciesId()
+                    );
+                }
+            }
 
         } catch (Exception e) {
 
@@ -120,31 +172,55 @@ public class SpeciesDAO {
                     "Error updating species."
             );
 
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
+
+    // =========================================================
+    // DELETE
+    // =========================================================
 
     public void delete(int speciesId) {
 
         String sql = """
-                DELETE FROM especies
-                WHERE id_especie = ?
+                DELETE FROM species
+                WHERE species_id = ?
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (Connection connection = SQLiteConnection.connect()) {
 
-            statement.setInt(
-                    1,
-                    speciesId
-            );
+            if (connection == null) {
+                System.out.println(
+                        "Error: Could not connect to database."
+                );
+                return;
+            }
 
-            statement.executeUpdate();
+            try (PreparedStatement statement =
+                         connection.prepareStatement(sql)) {
 
-            System.out.println(
-                    "Species deleted successfully."
-            );
+                statement.setInt(
+                        1,
+                        speciesId
+                );
+
+                int rowsAffected =
+                        statement.executeUpdate();
+
+                if (rowsAffected > 0) {
+
+                    System.out.println(
+                            "Species deleted successfully."
+                    );
+
+                } else {
+
+                    System.out.println(
+                            "No species found with ID: "
+                                    + speciesId
+                    );
+                }
+            }
 
         } catch (Exception e) {
 
@@ -152,7 +228,7 @@ public class SpeciesDAO {
                     "Error deleting species."
             );
 
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 }

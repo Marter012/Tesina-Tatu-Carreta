@@ -9,317 +9,698 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
 public class ViewUser {
 
-    private final UserDAO userDAO = new UserDAO();
+    private final UserDAO userDAO =
+            new UserDAO();
+
+    private final ObservableList<User> users =
+            FXCollections.observableArrayList();
 
     private final TableView<User> table =
             new TableView<>();
 
-    private final TextField nameField =
-            new TextField();
+    private TextField nameField;
+    private TextField usernameField;
+    private PasswordField passwordField;
 
-    private final TextField usernameField =
-            new TextField();
+    private ComboBox<String> roleComboBox;
+    private ComboBox<String> statusComboBox;
 
-    private final PasswordField passwordField =
-            new PasswordField();
+    private VBox sectionContainer;
 
-    private final ComboBox<String> roleComboBox =
-            new ComboBox<>();
+    private Button informationButton;
+    private Button registeredButton;
 
-    private final ComboBox<String> statusComboBox =
-            new ComboBox<>();
+    private VBox informationSection;
+    private VBox registeredSection;
 
-    public void show() {
+    // =========================================================
+    // VIEW
+    // =========================================================
 
-        Label title = new Label(
-                "USER MANAGEMENT"
+    public Parent getView() {
+        return createView();
+    }
+
+    public Parent createView() {
+
+        VBox root =
+                new VBox(20);
+
+        root.setPadding(
+                new Insets(25)
         );
+
+        root.setStyle(
+                "-fx-background-color: #F4F1E8;"
+        );
+
+        Label title =
+                new Label(
+                        "Gestión de usuarios"
+                );
 
         title.setStyle(
-                "-fx-font-size: 20px;" +
-                "-fx-font-weight: bold;"
+                "-fx-font-size: 26px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
         );
 
-        Label nameLabel = new Label("Name:");
-        Label usernameLabel = new Label("Username:");
-        Label passwordLabel = new Label("Password:");
-        Label roleLabel = new Label("Role:");
-        Label statusLabel = new Label("Status:");
+        Label subtitle =
+                new Label(
+                        "Gestiona los usuarios y sus roles del sistema."
+                );
 
-        nameField.setPromptText(
-                "E.g.: Juan Pérez"
+        subtitle.setStyle(
+                "-fx-font-size: 14px;" +
+                "-fx-text-fill: #405047;"
         );
 
-        usernameField.setPromptText(
-                "E.g.: jperez"
-        );
+        VBox header =
+                new VBox(
+                        5,
+                        title,
+                        subtitle
+                );
 
-        passwordField.setPromptText(
-                "Password"
-        );
+        informationSection =
+                createInformationSection();
 
-        roleComboBox.setItems(
-                FXCollections.observableArrayList(
-                        "Administrator",
-                        "Manager",
-                        "Keeper",
-                        "Veterinarian"
-                )
-        );
+        registeredSection =
+                createRegisteredSection();
 
-        statusComboBox.setItems(
-                FXCollections.observableArrayList(
-                        "Active",
-                        "Inactive"
-                )
-        );
+        informationButton =
+                createSectionButton(
+                        "Información del usuario"
+                );
 
-        GridPane form = new GridPane();
+        registeredButton =
+                createSectionButton(
+                        "Usuarios registrados"
+                );
 
-        form.setHgap(10);
-        form.setVgap(10);
-        form.setPadding(
-                new Insets(10)
-        );
+        HBox navigation =
+                new HBox(12);
 
-        form.add(nameLabel, 0, 0);
-        form.add(nameField, 1, 0);
-
-        form.add(usernameLabel, 0, 1);
-        form.add(usernameField, 1, 1);
-
-        form.add(passwordLabel, 0, 2);
-        form.add(passwordField, 1, 2);
-
-        form.add(roleLabel, 0, 3);
-        form.add(roleComboBox, 1, 3);
-
-        form.add(statusLabel, 0, 4);
-        form.add(statusComboBox, 1, 4);
-
-        Button addButton =
-                new Button("ADD");
-
-        Button updateButton =
-                new Button("UPDATE");
-
-        Button deleteButton =
-                new Button("DELETE");
-
-        Button backButton =
-                new Button("BACK");
-
-        addButton.setOnAction(
-                event -> addUser()
-        );
-
-        updateButton.setOnAction(
-                event -> updateUser()
-        );
-
-        deleteButton.setOnAction(
-                event -> deleteUser()
-        );
-
-        backButton.setOnAction(event -> {
-
-            Stage currentStage =
-                    (Stage) backButton
-                            .getScene()
-                            .getWindow();
-
-            currentStage.close();
-        });
-
-        HBox buttons = new HBox(
-                10,
-                addButton,
-                updateButton,
-                deleteButton,
-                backButton
-        );
-
-        buttons.setAlignment(
+        navigation.setAlignment(
                 Pos.CENTER
         );
 
-        createTable();
-
-        table.setOnMouseClicked(event -> {
-
-            User selectedUser =
-                    table.getSelectionModel()
-                            .getSelectedItem();
-
-            if (selectedUser != null) {
-
-                loadSelectedUser(selectedUser);
-            }
-        });
-
-        VBox root = new VBox(
-                15,
-                title,
-                form,
-                buttons,
-                table
+        navigation.getChildren().addAll(
+                informationButton,
+                registeredButton
         );
 
-        root.setPadding(
-                new Insets(20)
+        sectionContainer =
+                new VBox();
+
+        sectionContainer.setFillWidth(
+                true
+        );
+
+        VBox.setVgrow(
+                sectionContainer,
+                Priority.ALWAYS
+        );
+
+        informationButton.setOnAction(
+                event ->
+                        showSection(
+                                informationSection,
+                                informationButton
+                        )
+        );
+
+        registeredButton.setOnAction(
+                event ->
+                        showSection(
+                                registeredSection,
+                                registeredButton
+                        )
         );
 
         loadUsers();
 
-        Stage stage = new Stage();
-
-        stage.setTitle(
-                "Tatú Carreta - Users"
+        root.getChildren().addAll(
+                header,
+                navigation,
+                sectionContainer
         );
 
-        stage.setScene(
-                new Scene(root, 800, 600)
+        showSection(
+                informationSection,
+                informationButton
         );
 
-        stage.show();
+        ScrollPane scrollPane =
+                new ScrollPane(root);
+
+        scrollPane.setFitToWidth(
+                true
+        );
+
+        scrollPane.setFitToHeight(
+                true
+        );
+
+        scrollPane.setStyle(
+                "-fx-background: #F4F1E8;"
+        );
+
+        return scrollPane;
     }
+
+    // =========================================================
+    // INFORMATION SECTION
+    // =========================================================
+
+    private VBox createInformationSection() {
+
+        VBox section =
+                new VBox(20);
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Información del usuario"
+                );
+
+        GridPane form =
+                new GridPane();
+
+        form.setHgap(20);
+        form.setVgap(15);
+
+        nameField =
+                new TextField();
+
+        nameField.setPromptText(
+                "Ingrese el nombre completo"
+        );
+
+        usernameField =
+                new TextField();
+
+        usernameField.setPromptText(
+                "Ingrese el nombre de usuario"
+        );
+
+        passwordField =
+                new PasswordField();
+
+        passwordField.setPromptText(
+                "Ingrese la contraseña"
+        );
+
+        roleComboBox =
+                new ComboBox<>();
+
+        roleComboBox.getItems().addAll(
+                "Administrator",
+                "Manager",
+                "Keeper",
+                "Veterinarian"
+        );
+
+        roleComboBox.setPromptText(
+                "Seleccione un rol"
+        );
+
+        roleComboBox.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        statusComboBox =
+                new ComboBox<>();
+
+        statusComboBox.getItems().addAll(
+                "Active",
+                "Inactive"
+        );
+
+        statusComboBox.setValue(
+                "Active"
+        );
+
+        statusComboBox.setMaxWidth(
+                Double.MAX_VALUE
+        );
+
+        form.add(
+                createFieldLabel(
+                        "Nombre"
+                ),
+                0,
+                0
+        );
+
+        form.add(
+                nameField,
+                1,
+                0
+        );
+
+        form.add(
+                createFieldLabel(
+                        "Usuario"
+                ),
+                0,
+                1
+        );
+
+        form.add(
+                usernameField,
+                1,
+                1
+        );
+
+        form.add(
+                createFieldLabel(
+                        "Contraseña"
+                ),
+                0,
+                2
+        );
+
+        form.add(
+                passwordField,
+                1,
+                2
+        );
+
+        form.add(
+                createFieldLabel(
+                        "Rol"
+                ),
+                0,
+                3
+        );
+
+        form.add(
+                roleComboBox,
+                1,
+                3
+        );
+
+        form.add(
+                createFieldLabel(
+                        "Estado"
+                ),
+                0,
+                4
+        );
+
+        form.add(
+                statusComboBox,
+                1,
+                4
+        );
+
+        GridPane.setHgrow(
+                nameField,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                usernameField,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                passwordField,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                roleComboBox,
+                Priority.ALWAYS
+        );
+
+        GridPane.setHgrow(
+                statusComboBox,
+                Priority.ALWAYS
+        );
+
+        Button clearButton =
+                new Button(
+                        "LIMPIAR"
+                );
+
+        Button deleteButton =
+                new Button(
+                        "ELIMINAR"
+                );
+
+        Button editButton =
+                new Button(
+                        "EDITAR"
+                );
+
+        Button addButton =
+                new Button(
+                        "AGREGAR"
+                );
+
+        applySecondaryStyle(
+                clearButton
+        );
+
+        applyDeleteStyle(
+                deleteButton
+        );
+
+        applySecondaryStyle(
+                editButton
+        );
+
+        applyPrimaryStyle(
+                addButton
+        );
+
+        clearButton.setOnAction(
+                event ->
+                        clearFields()
+        );
+
+        deleteButton.setOnAction(
+                event ->
+                        deleteUser()
+        );
+
+        editButton.setOnAction(
+                event ->
+                        updateUser()
+        );
+
+        addButton.setOnAction(
+                event ->
+                        addUser()
+        );
+
+        HBox actions =
+                new HBox(10);
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        actions.getChildren().addAll(
+                clearButton,
+                deleteButton,
+                editButton,
+                addButton
+        );
+
+        card.getChildren().addAll(
+                title,
+                form,
+                actions
+        );
+
+        section.getChildren().add(
+                card
+        );
+
+        return section;
+    }
+
+    // =========================================================
+    // REGISTERED SECTION
+    // =========================================================
+
+    private VBox createRegisteredSection() {
+
+        VBox section =
+                new VBox(20);
+
+        VBox card =
+                createCard();
+
+        Label title =
+                createSectionTitle(
+                        "Usuarios registrados"
+                );
+
+        createTable();
+
+        Button refreshButton =
+                new Button(
+                        "ACTUALIZAR"
+                );
+
+        applySecondaryStyle(
+                refreshButton
+        );
+
+        refreshButton.setOnAction(
+                event ->
+                        loadUsers()
+        );
+
+        HBox actions =
+                new HBox(10);
+
+        actions.setAlignment(
+                Pos.CENTER_RIGHT
+        );
+
+        actions.getChildren().add(
+                refreshButton
+        );
+
+        card.getChildren().addAll(
+                title,
+                table,
+                actions
+        );
+
+        VBox.setVgrow(
+                table,
+                Priority.ALWAYS
+        );
+
+        section.getChildren().add(
+                card
+        );
+
+        return section;
+    }
+
+    // =========================================================
+    // TABLE
+    // =========================================================
 
     private void createTable() {
 
-        TableColumn<User, Number> idColumn =
-                new TableColumn<>("ID");
+        table.getColumns().clear();
+
+        TableColumn<User, Number>
+                idColumn =
+                new TableColumn<>(
+                        "ID"
+                );
 
         idColumn.setCellValueFactory(
-                data -> new SimpleIntegerProperty(
-                        data.getValue().getUserId()
-                )
+                data ->
+                        new SimpleIntegerProperty(
+                                data.getValue()
+                                        .getUserId()
+                        )
         );
 
-        TableColumn<User, String> nameColumn =
-                new TableColumn<>("Name");
+        TableColumn<User, String>
+                nameColumn =
+                new TableColumn<>(
+                        "Nombre"
+                );
 
         nameColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getFullName()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getFullName()
+                        )
         );
 
-        TableColumn<User, String> usernameColumn =
-                new TableColumn<>("Username");
+        TableColumn<User, String>
+                usernameColumn =
+                new TableColumn<>(
+                        "Usuario"
+                );
 
         usernameColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getUsername()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                data.getValue()
+                                        .getUsername()
+                        )
         );
 
-        TableColumn<User, String> roleColumn =
-                new TableColumn<>("Role");
+        TableColumn<User, String>
+                roleColumn =
+                new TableColumn<>(
+                        "Rol"
+                );
 
         roleColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getRole()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                translateRole(
+                                        data.getValue()
+                                                .getRole()
+                                )
+                        )
         );
 
-        TableColumn<User, String> statusColumn =
-                new TableColumn<>("Status");
+        TableColumn<User, String>
+                statusColumn =
+                new TableColumn<>(
+                        "Estado"
+                );
 
         statusColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(
-                        data.getValue().getStatus()
-                )
+                data ->
+                        new SimpleStringProperty(
+                                translateStatus(
+                                        data.getValue()
+                                                .getStatus()
+                                )
+                        )
         );
-        table.getColumns().add(idColumn);
-        table.getColumns().add(nameColumn);
-        table.getColumns().add(usernameColumn);
-        table.getColumns().add(roleColumn);
-        table.getColumns().add(statusColumn);
+
+        idColumn.setPrefWidth(70);
+        nameColumn.setPrefWidth(220);
+        usernameColumn.setPrefWidth(180);
+        roleColumn.setPrefWidth(160);
+        statusColumn.setPrefWidth(120);
+
+        table.getColumns().addAll(
+                idColumn,
+                nameColumn,
+                usernameColumn,
+                roleColumn,
+                statusColumn
+        );
+
+        table.setItems(
+                users
+        );
 
         table.setColumnResizePolicy(
                 TableView.CONSTRAINED_RESIZE_POLICY
         );
-    }
 
-    private void loadUsers() {
+        table.setPrefHeight(
+                420
+        );
 
-        table.getItems().clear();
+        table.setMinHeight(
+                420
+        );
 
-        ObservableList<User> users =
-                FXCollections.observableArrayList(
-                        userDAO.list()
+        table.getSelectionModel()
+                .selectedItemProperty()
+                .addListener(
+                        (observable,
+                         oldValue,
+                         newValue) -> {
+
+                            if (newValue != null) {
+
+                                loadSelectedUser(
+                                        newValue
+                                );
+                            }
+                        }
                 );
-
-        table.getItems().addAll(users);
     }
+
+    // =========================================================
+    // SELECTED USER
+    // =========================================================
 
     private void loadSelectedUser(
-            User selectedUser) {
+            User user) {
 
         nameField.setText(
-                selectedUser.getFullName()
+                user.getFullName()
         );
 
         usernameField.setText(
-                selectedUser.getUsername()
+                user.getUsername()
         );
 
         passwordField.setText(
-                selectedUser.getPassword()
+                user.getPassword()
         );
 
         roleComboBox.setValue(
-                selectedUser.getRole()
+                user.getRole()
         );
 
         statusComboBox.setValue(
-                selectedUser.getStatus()
+                user.getStatus()
         );
     }
 
+    // =========================================================
+    // LOAD
+    // =========================================================
+
+    private void loadUsers() {
+
+        users.setAll(
+                userDAO.list()
+        );
+    }
+
+    // =========================================================
+    // ADD
+    // =========================================================
+
     private void addUser() {
 
-        if (nameField.getText().isBlank() ||
-                usernameField.getText().isBlank() ||
-                passwordField.getText().isBlank() ||
-                roleComboBox.getValue() == null ||
-                statusComboBox.getValue() == null) {
-
-            showError(
-                    "Complete all required fields."
-            );
-
+        if (!validateFields()) {
             return;
         }
 
-        User user = new User();
+        User user =
+                new User();
 
         user.setFullName(
-                nameField.getText().trim()
+                nameField
+                        .getText()
+                        .trim()
         );
 
         user.setUsername(
-                usernameField.getText().trim()
+                usernameField
+                        .getText()
+                        .trim()
         );
 
         user.setPassword(
-                passwordField.getText()
+                passwordField
+                        .getText()
         );
 
         user.setRole(
@@ -330,111 +711,485 @@ public class ViewUser {
                 statusComboBox.getValue()
         );
 
-        userDAO.add(user);
+        userDAO.add(
+                user
+        );
 
         loadUsers();
+
         clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Éxito",
+                "Usuario agregado correctamente."
+        );
     }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
 
     private void updateUser() {
 
-        User selectedUser =
+        User selected =
                 table.getSelectionModel()
                         .getSelectedItem();
 
-        if (selectedUser == null) {
+        if (selected == null) {
 
-            showError(
-                    "Select a record."
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Seleccione primero un usuario."
             );
 
             return;
         }
 
-        if (nameField.getText().isBlank() ||
-                usernameField.getText().isBlank() ||
-                passwordField.getText().isBlank() ||
-                roleComboBox.getValue() == null ||
-                statusComboBox.getValue() == null) {
-
-            showError(
-                    "Complete all required fields."
-            );
-
+        if (!validateFields()) {
             return;
         }
 
-        selectedUser.setFullName(
-                nameField.getText().trim()
+        selected.setFullName(
+                nameField
+                        .getText()
+                        .trim()
         );
 
-        selectedUser.setUsername(
-                usernameField.getText().trim()
+        selected.setUsername(
+                usernameField
+                        .getText()
+                        .trim()
         );
 
-        selectedUser.setPassword(
-                passwordField.getText()
+        selected.setPassword(
+                passwordField
+                        .getText()
         );
 
-        selectedUser.setRole(
+        selected.setRole(
                 roleComboBox.getValue()
         );
 
-        selectedUser.setStatus(
+        selected.setStatus(
                 statusComboBox.getValue()
         );
 
-        userDAO.update(selectedUser);
+        userDAO.update(
+                selected
+        );
 
         loadUsers();
+
         clearFields();
+
+        showMessage(
+                Alert.AlertType.INFORMATION,
+                "Éxito",
+                "Usuario actualizado correctamente."
+        );
     }
+
+    // =========================================================
+    // DELETE
+    // =========================================================
 
     private void deleteUser() {
 
-        User selectedUser =
+        User selected =
                 table.getSelectionModel()
                         .getSelectedItem();
 
-        if (selectedUser == null) {
+        if (selected == null) {
 
-            showError(
-                    "Select a record."
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Sin selección",
+                    "Seleccione primero un usuario."
             );
 
             return;
         }
 
-        userDAO.delete(
-                selectedUser.getUserId()
+        Alert confirmation =
+                new Alert(
+                        Alert.AlertType.CONFIRMATION
+                );
+
+        confirmation.setTitle(
+                "Eliminar usuario"
         );
 
-        loadUsers();
-        clearFields();
+        confirmation.setHeaderText(
+                null
+        );
+
+        confirmation.setContentText(
+                "¿Está seguro de que desea eliminar al usuario \""
+                        + selected.getUsername()
+                        + "\"?"
+        );
+
+        confirmation.showAndWait()
+                .ifPresent(
+                        response -> {
+
+                            if (response ==
+                                    ButtonType.OK) {
+
+                                userDAO.delete(
+                                        selected
+                                                .getUserId()
+                                );
+
+                                loadUsers();
+
+                                clearFields();
+
+                                showMessage(
+                                        Alert.AlertType.INFORMATION,
+                                        "Éxito",
+                                        "Usuario eliminado correctamente."
+                                );
+                            }
+                        }
+                );
     }
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+    private boolean validateFields() {
+
+        if (nameField.getText()
+                .trim()
+                .isEmpty()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "El nombre es obligatorio."
+            );
+
+            return false;
+        }
+
+        if (usernameField.getText()
+                .trim()
+                .isEmpty()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "El nombre de usuario es obligatorio."
+            );
+
+            return false;
+        }
+
+        if (passwordField.getText()
+                .isEmpty()) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "La contraseña es obligatoria."
+            );
+
+            return false;
+        }
+
+        if (roleComboBox.getValue() == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "El rol es obligatorio."
+            );
+
+            return false;
+        }
+
+        if (statusComboBox.getValue() == null) {
+
+            showMessage(
+                    Alert.AlertType.WARNING,
+                    "Error de validación",
+                    "El estado es obligatorio."
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    // =========================================================
+    // CLEAR
+    // =========================================================
 
     private void clearFields() {
 
         nameField.clear();
+
         usernameField.clear();
+
         passwordField.clear();
 
-        roleComboBox.setValue(null);
-        statusComboBox.setValue(null);
+        roleComboBox.setValue(
+                null
+        );
+
+        statusComboBox.setValue(
+                "Active"
+        );
 
         table.getSelectionModel()
                 .clearSelection();
     }
 
-    private void showError(
+    // =========================================================
+    // NAVIGATION
+    // =========================================================
+
+    private void showSection(
+            VBox section,
+            Button activeButton) {
+
+        sectionContainer
+                .getChildren()
+                .setAll(
+                        section
+                );
+
+        informationButton.setStyle(
+                normalSectionButtonStyle()
+        );
+
+        registeredButton.setStyle(
+                normalSectionButtonStyle()
+        );
+
+        activeButton.setStyle(
+                selectedSectionButtonStyle()
+        );
+    }
+
+    private Button createSectionButton(
+            String text) {
+
+        Button button =
+                new Button(text);
+
+        button.setPrefHeight(
+                40
+        );
+
+        button.setPadding(
+                new Insets(
+                        0,
+                        22,
+                        0,
+                        22
+                )
+        );
+
+        button.setStyle(
+                normalSectionButtonStyle()
+        );
+
+        return button;
+    }
+
+    private String normalSectionButtonStyle() {
+
+        return """
+                -fx-background-color: #E2E7E2;
+                -fx-text-fill: #254D3D;
+                -fx-font-weight: bold;
+                -fx-background-radius: 9;
+                """;
+    }
+
+    private String selectedSectionButtonStyle() {
+
+        return """
+                -fx-background-color: #254D3D;
+                -fx-text-fill: white;
+                -fx-font-weight: bold;
+                -fx-background-radius: 9;
+                """;
+    }
+
+    // =========================================================
+    // UI HELPERS
+    // =========================================================
+
+    private VBox createCard() {
+
+        VBox card =
+                new VBox(18);
+
+        card.setPadding(
+                new Insets(25)
+        );
+
+        card.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-background-radius: 14;" +
+                "-fx-border-color: #C9D2CB;" +
+                "-fx-border-radius: 14;"
+        );
+
+        return card;
+    }
+
+    private Label createSectionTitle(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-size: 20px;" +
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #254D3D;"
+        );
+
+        return label;
+    }
+
+    private Label createFieldLabel(
+            String text) {
+
+        Label label =
+                new Label(text);
+
+        label.setStyle(
+                "-fx-font-weight: bold;" +
+                "-fx-text-fill: #405047;"
+        );
+
+        return label;
+    }
+
+    // =========================================================
+    // TRANSLATIONS
+    // =========================================================
+
+    private String translateRole(
+            String role) {
+
+        if (role == null) {
+            return "";
+        }
+
+        return switch (role) {
+
+            case "Administrator" ->
+                    "Administrador";
+
+            case "Manager" ->
+                    "Encargado";
+
+            case "Keeper" ->
+                    "Cuidador";
+
+            case "Veterinarian" ->
+                    "Veterinario";
+
+            default ->
+                    role;
+        };
+    }
+
+    private String translateStatus(
+            String status) {
+
+        if (status == null) {
+            return "";
+        }
+
+        return switch (status) {
+
+            case "Active" ->
+                    "Activo";
+
+            case "Inactive" ->
+                    "Inactivo";
+
+            default ->
+                    status;
+        };
+    }
+
+    // =========================================================
+    // STYLES
+    // =========================================================
+
+    private void applyPrimaryStyle(
+            Button button) {
+
+        button.setStyle(
+                "-fx-background-color: #254D3D;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
+
+    private void applySecondaryStyle(
+            Button button) {
+
+        button.setStyle(
+                "-fx-background-color: white;" +
+                "-fx-text-fill: #405047;" +
+                "-fx-font-weight: bold;" +
+                "-fx-border-color: #C9D2CB;" +
+                "-fx-border-radius: 8;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
+
+    private void applyDeleteStyle(
+            Button button) {
+
+        button.setStyle(
+                "-fx-background-color: #A34A4A;" +
+                "-fx-text-fill: white;" +
+                "-fx-font-weight: bold;" +
+                "-fx-background-radius: 8;" +
+                "-fx-padding: 10 20;"
+        );
+    }
+
+    // =========================================================
+    // ALERT
+    // =========================================================
+
+    private void showMessage(
+            Alert.AlertType type,
+            String title,
             String message) {
 
         Alert alert =
-                new Alert(Alert.AlertType.ERROR);
+                new Alert(type);
 
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
+        alert.setTitle(
+                title
+        );
+
+        alert.setHeaderText(
+                null
+        );
+
+        alert.setContentText(
+                message
+        );
 
         alert.showAndWait();
     }

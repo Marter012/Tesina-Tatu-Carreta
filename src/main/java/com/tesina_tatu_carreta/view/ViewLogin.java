@@ -52,7 +52,7 @@ public class ViewLogin {
         );
 
         Label systemSubtitle =
-                new Label("Native Wildlife Management");
+                new Label("Gestión de Fauna Silvestre");
 
         systemSubtitle.setStyle(
                 "-fx-font-size: 15px;" +
@@ -65,7 +65,7 @@ public class ViewLogin {
         // =========================
 
         Label loginTitle =
-                new Label("Sign In");
+                new Label("Iniciar sesión");
 
         loginTitle.setStyle(
                 "-fx-font-size: 23px;" +
@@ -75,7 +75,7 @@ public class ViewLogin {
 
         Label description =
                 new Label(
-                        "Enter your credentials to access the system"
+                        "Ingrese sus credenciales para acceder al sistema"
                 );
 
         description.setStyle(
@@ -89,7 +89,7 @@ public class ViewLogin {
         // =========================
 
         Label usernameLabel =
-                new Label("Username");
+                new Label("Usuario");
 
         usernameLabel.setStyle(
                 "-fx-font-size: 13px;" +
@@ -101,7 +101,7 @@ public class ViewLogin {
                 new TextField();
 
         usernameField.setPromptText(
-                "Enter your username"
+                "Ingrese su usuario"
         );
 
         usernameField.setPrefHeight(38);
@@ -119,7 +119,7 @@ public class ViewLogin {
         // =========================
 
         Label passwordLabel =
-                new Label("Password");
+                new Label("Contraseña");
 
         passwordLabel.setStyle(
                 "-fx-font-size: 13px;" +
@@ -131,7 +131,7 @@ public class ViewLogin {
                 new PasswordField();
 
         passwordField.setPromptText(
-                "Enter your password"
+                "Ingrese su contraseña"
         );
 
         passwordField.setPrefHeight(38);
@@ -149,7 +149,7 @@ public class ViewLogin {
         // =========================
 
         Button loginButton =
-                new Button("SIGN IN");
+                new Button("INICIAR SESIÓN");
 
         loginButton.setMaxWidth(
                 Double.MAX_VALUE
@@ -181,7 +181,7 @@ public class ViewLogin {
                     || password.isBlank()) {
 
                 showMessage(
-                        "Please enter your username and password."
+                        "Ingrese su usuario y contraseña."
                 );
 
                 return;
@@ -210,7 +210,7 @@ public class ViewLogin {
             } else {
 
                 showMessage(
-                        "Incorrect username or password, or inactive user."
+                        "El usuario o la contraseña son incorrectos, o el usuario se encuentra inactivo."
                 );
             }
         });
@@ -262,7 +262,7 @@ public class ViewLogin {
 
         Label footer =
                 new Label(
-                        "Tatú Carreta Nature Reserve"
+                        "Reserva Natural Tatú Carreta"
                 );
 
         footer.setStyle(
@@ -312,7 +312,7 @@ public class ViewLogin {
                 );
 
         stage.setTitle(
-                "Tatú Carreta - Sign In"
+                "Tatú Carreta - Iniciar sesión"
         );
 
         stage.setScene(

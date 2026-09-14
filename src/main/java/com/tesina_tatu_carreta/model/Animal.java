@@ -6,10 +6,8 @@ public class Animal {
     private int speciesId;
     private String commonName;
     private String scientificName;
-
     private int currentQuantity;
     private String origin;
-
     private String status;
 
     public Animal() {
@@ -89,14 +87,8 @@ public class Animal {
         this.status = status;
     }
 
-    // This is what the ComboBox will display
     @Override
     public String toString() {
-        return animalId
-                + " - "
-                + commonName
-                + " (Quantity: "
-                + currentQuantity
-                + ")";
+        return commonName;
     }
 }

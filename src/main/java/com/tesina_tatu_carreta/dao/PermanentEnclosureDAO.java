@@ -18,14 +18,14 @@ public class PermanentEnclosureDAO {
     public void add(PermanentEnclosure enclosure) {
 
         String sql = """
-                INSERT INTO plantel_permanente (
-                    id_animal,
-                    cantidad,
-                    tipo_ubicacion,
-                    id_habitaculo,
-                    fecha_ingreso_plantel,
-                    estado,
-                    observaciones
+                INSERT INTO permanent_enclosures (
+                    animal_id,
+                    quantity,
+                    location_type,
+                    enclosure_id,
+                    enclosure_entry_date,
+                    status,
+                    observations
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
@@ -108,25 +108,25 @@ public class PermanentEnclosureDAO {
 
         String sql = """
                 SELECT
-                    p.id_plantel,
-                    p.id_animal,
-                    a.nombre_vulgar AS nombre_animal,
-                    p.cantidad,
-                    p.tipo_ubicacion,
-                    p.id_habitaculo,
-                    h.nombre AS nombre_habitaculo,
-                    p.fecha_ingreso_plantel,
-                    p.estado,
-                    p.observaciones
-                FROM plantel_permanente p
+                    p.permanent_enclosure_id,
+                    p.animal_id,
+                    a.common_name AS animal_name,
+                    p.quantity,
+                    p.location_type,
+                    p.enclosure_id,
+                    e.name AS enclosure_name,
+                    p.enclosure_entry_date,
+                    p.status,
+                    p.observations
+                FROM permanent_enclosures p
 
-                INNER JOIN animales a
-                    ON p.id_animal = a.id_animal
+                INNER JOIN animals a
+                    ON p.animal_id = a.animal_id
 
-                LEFT JOIN habitaculos h
-                    ON p.id_habitaculo = h.id_habitaculo
+                LEFT JOIN enclosures e
+                    ON p.enclosure_id = e.enclosure_id
 
-                ORDER BY p.id_plantel
+                ORDER BY p.permanent_enclosure_id
                 """;
 
         try (Connection connection =
@@ -142,27 +142,39 @@ public class PermanentEnclosureDAO {
                         new PermanentEnclosure();
 
                 enclosure.setPermanentEnclosureId(
-                        result.getInt("id_plantel")
+                        result.getInt(
+                                "permanent_enclosure_id"
+                        )
                 );
 
                 enclosure.setAnimalId(
-                        result.getInt("id_animal")
+                        result.getInt(
+                                "animal_id"
+                        )
                 );
 
                 enclosure.setAnimalName(
-                        result.getString("nombre_animal")
+                        result.getString(
+                                "animal_name"
+                        )
                 );
 
                 enclosure.setQuantity(
-                        result.getInt("cantidad")
+                        result.getInt(
+                                "quantity"
+                        )
                 );
 
                 enclosure.setLocationType(
-                        result.getString("tipo_ubicacion")
+                        result.getString(
+                                "location_type"
+                        )
                 );
 
                 int enclosureId =
-                        result.getInt("id_habitaculo");
+                        result.getInt(
+                                "enclosure_id"
+                        );
 
                 if (result.wasNull()) {
 
@@ -170,23 +182,33 @@ public class PermanentEnclosureDAO {
 
                 } else {
 
-                    enclosure.setEnclosureId(enclosureId);
+                    enclosure.setEnclosureId(
+                            enclosureId
+                    );
                 }
 
                 enclosure.setEnclosureName(
-                        result.getString("nombre_habitaculo")
+                        result.getString(
+                                "enclosure_name"
+                        )
                 );
 
                 enclosure.setEnclosureEntryDate(
-                        result.getString("fecha_ingreso_plantel")
+                        result.getString(
+                                "enclosure_entry_date"
+                        )
                 );
 
                 enclosure.setStatus(
-                        result.getString("estado")
+                        result.getString(
+                                "status"
+                        )
                 );
 
                 enclosure.setObservations(
-                        result.getString("observaciones")
+                        result.getString(
+                                "observations"
+                        )
                 );
 
                 enclosures.add(enclosure);
@@ -212,16 +234,16 @@ public class PermanentEnclosureDAO {
     public void update(PermanentEnclosure enclosure) {
 
         String sql = """
-                UPDATE plantel_permanente
+                UPDATE permanent_enclosures
                 SET
-                    id_animal = ?,
-                    cantidad = ?,
-                    tipo_ubicacion = ?,
-                    id_habitaculo = ?,
-                    fecha_ingreso_plantel = ?,
-                    estado = ?,
-                    observaciones = ?
-                WHERE id_plantel = ?
+                    animal_id = ?,
+                    quantity = ?,
+                    location_type = ?,
+                    enclosure_id = ?,
+                    enclosure_entry_date = ?,
+                    status = ?,
+                    observations = ?
+                WHERE permanent_enclosure_id = ?
                 """;
 
         try (Connection connection =
@@ -303,8 +325,8 @@ public class PermanentEnclosureDAO {
     public void delete(int permanentEnclosureId) {
 
         String sql = """
-                DELETE FROM plantel_permanente
-                WHERE id_plantel = ?
+                DELETE FROM permanent_enclosures
+                WHERE permanent_enclosure_id = ?
                 """;
 
         try (Connection connection =

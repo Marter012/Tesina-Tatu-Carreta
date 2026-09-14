@@ -1,35 +1,45 @@
 package com.tesina_tatu_carreta.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.tesina_tatu_carreta.database.SQLiteConnection;
 import com.tesina_tatu_carreta.model.Entry;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
 public class EntryDAO {
 
-    public void add(Entry entry) {
+    public int insertAndReturnId(
+            Connection connection,
+            Entry entry)
+            throws SQLException {
 
         String sql = """
-                INSERT INTO ingresos (
-                    numero_acta,
-                    fecha_ingreso,
-                    organismo_procedencia,
-                    responsable_entrega,
-                    procedencia,
-                    motivo_ingreso,
-                    documentacion,
-                    observaciones
+                INSERT INTO entries
+                (
+                    record_number,
+                    entry_date,
+                    source_organization,
+                    delivery_responsible,
+                    origin,
+                    entry_reason,
+                    documentation,
+                    observations
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                sql,
+                                Statement.RETURN_GENERATED_KEYS
+                        )
+        ) {
 
             statement.setString(
                     1,
@@ -73,123 +83,299 @@ public class EntryDAO {
 
             statement.executeUpdate();
 
-            System.out.println(
-                    "Entry added successfully."
-            );
+            try (
+                    ResultSet keys =
+                            statement.getGeneratedKeys()
+            ) {
 
-        } catch (Exception e) {
+                if (keys.next()) {
 
-            System.out.println(
-                    "Error adding entry."
-            );
-
-            System.out.println(e.getMessage());
+                    return keys.getInt(1);
+                }
+            }
         }
+
+        return 0;
+    }
+
+    public void add(
+            Connection connection,
+            Entry entry)
+            throws SQLException {
+
+        String sql = """
+                INSERT INTO entries
+                (
+                    record_number,
+                    entry_date,
+                    source_organization,
+                    delivery_responsible,
+                    origin,
+                    entry_reason,
+                    documentation,
+                    observations
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setString(
+                    1,
+                    entry.getRecordNumber()
+            );
+
+            statement.setString(
+                    2,
+                    entry.getEntryDate()
+            );
+
+            statement.setString(
+                    3,
+                    entry.getSourceOrganization()
+            );
+
+            statement.setString(
+                    4,
+                    entry.getDeliveryResponsible()
+            );
+
+            statement.setString(
+                    5,
+                    entry.getOrigin()
+            );
+
+            statement.setString(
+                    6,
+                    entry.getEntryReason()
+            );
+
+            statement.setString(
+                    7,
+                    entry.getDocumentation()
+            );
+
+            statement.setString(
+                    8,
+                    entry.getObservations()
+            );
+
+            statement.executeUpdate();
+        }
+    }
+
+    public void add(
+            Entry entry) {
+
+        try (Connection connection =
+                     SQLiteConnection.connect()) {
+
+            add(
+                    connection,
+                    entry
+            );
+
+        } catch (SQLException exception) {
+
+            throw new RuntimeException(
+                    "Error adding entry.",
+                    exception
+            );
+        }
+    }
+
+    public Entry findByRecordNumber(
+            String recordNumber) {
+
+        String sql = """
+                SELECT
+                    entry_id,
+                    record_number,
+                    entry_date,
+                    source_organization,
+                    delivery_responsible,
+                    origin,
+                    entry_reason,
+                    documentation,
+                    observations
+                FROM entries
+                WHERE record_number = ?
+                """;
+
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setString(
+                    1,
+                    recordNumber
+            );
+
+            try (
+                    ResultSet resultSet =
+                            statement.executeQuery()
+            ) {
+
+                if (resultSet.next()) {
+
+                    return mapResultSet(
+                            resultSet
+                    );
+                }
+            }
+
+        } catch (SQLException exception) {
+
+            throw new RuntimeException(
+                    "Error finding entry.",
+                    exception
+            );
+        }
+
+        return null;
     }
 
     public List<Entry> list() {
 
-        List<Entry> entries = new ArrayList<>();
+        List<Entry> entries =
+                new ArrayList<>();
 
         String sql = """
                 SELECT
-                    id_ingreso,
-                    numero_acta,
-                    fecha_ingreso,
-                    organismo_procedencia,
-                    responsable_entrega,
-                    procedencia,
-                    motivo_ingreso,
-                    documentacion,
-                    observaciones
-                FROM ingresos
-                ORDER BY id_ingreso DESC
+                    entry_id,
+                    record_number,
+                    entry_date,
+                    source_organization,
+                    delivery_responsible,
+                    origin,
+                    entry_reason,
+                    documentation,
+                    observations
+                FROM entries
+                ORDER BY entry_id DESC
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql);
-             ResultSet result =
-                     statement.executeQuery()) {
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
 
-            while (result.next()) {
+                PreparedStatement statement =
+                        connection.prepareStatement(sql);
 
-                Entry entry = new Entry();
+                ResultSet resultSet =
+                        statement.executeQuery()
+        ) {
 
-                entry.setEntryId(
-                        result.getInt("id_ingreso")
+            while (resultSet.next()) {
+
+                entries.add(
+                        mapResultSet(resultSet)
                 );
-
-                entry.setRecordNumber(
-                        result.getString("numero_acta")
-                );
-
-                entry.setEntryDate(
-                        result.getString("fecha_ingreso")
-                );
-
-                entry.setSourceOrganization(
-                        result.getString(
-                                "organismo_procedencia"
-                        )
-                );
-
-                entry.setDeliveryResponsible(
-                        result.getString(
-                                "responsable_entrega"
-                        )
-                );
-
-                entry.setOrigin(
-                        result.getString("procedencia")
-                );
-
-                entry.setEntryReason(
-                        result.getString("motivo_ingreso")
-                );
-
-                entry.setDocumentation(
-                        result.getString("documentacion")
-                );
-
-                entry.setObservations(
-                        result.getString("observaciones")
-                );
-
-                entries.add(entry);
             }
 
-        } catch (Exception e) {
+        } catch (SQLException exception) {
 
-            System.out.println(
-                    "Error listing entries."
+            throw new RuntimeException(
+                    "Error listing entries.",
+                    exception
             );
-
-            System.out.println(e.getMessage());
         }
 
         return entries;
     }
 
-    public void update(Entry entry) {
+    public List<Entry> listByAnimal(
+            int animalId) {
+
+        List<Entry> entries =
+                new ArrayList<>();
 
         String sql = """
-                UPDATE ingresos
-                SET
-                    numero_acta = ?,
-                    fecha_ingreso = ?,
-                    organismo_procedencia = ?,
-                    responsable_entrega = ?,
-                    procedencia = ?,
-                    motivo_ingreso = ?,
-                    documentacion = ?,
-                    observaciones = ?
-                WHERE id_ingreso = ?
+                SELECT DISTINCT
+                    e.entry_id,
+                    e.record_number,
+                    e.entry_date,
+                    e.source_organization,
+                    e.delivery_responsible,
+                    e.origin,
+                    e.entry_reason,
+                    e.documentation,
+                    e.observations
+                FROM entries e
+                INNER JOIN entry_details d
+                    ON d.entry_id = e.entry_id
+                WHERE d.animal_id = ?
+                ORDER BY e.entry_id DESC
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setInt(
+                    1,
+                    animalId
+            );
+
+            try (
+                    ResultSet resultSet =
+                            statement.executeQuery()
+            ) {
+
+                while (resultSet.next()) {
+
+                    entries.add(
+                            mapResultSet(resultSet)
+                    );
+                }
+            }
+
+        } catch (SQLException exception) {
+
+            throw new RuntimeException(
+                    "Error listing entries by animal.",
+                    exception
+            );
+        }
+
+        return entries;
+    }
+
+    public void update(
+            Entry entry) {
+
+        String sql = """
+                UPDATE entries
+                SET
+                    record_number = ?,
+                    entry_date = ?,
+                    source_organization = ?,
+                    delivery_responsible = ?,
+                    origin = ?,
+                    entry_reason = ?,
+                    documentation = ?,
+                    observations = ?
+                WHERE entry_id = ?
+                """;
+
+        try (
+                Connection connection =
+                        SQLiteConnection.connect();
+
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
 
             statement.setString(
                     1,
@@ -238,30 +424,29 @@ public class EntryDAO {
 
             statement.executeUpdate();
 
-            System.out.println(
-                    "Entry updated successfully."
+        } catch (SQLException exception) {
+
+            throw new RuntimeException(
+                    "Error updating entry.",
+                    exception
             );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error updating entry."
-            );
-
-            System.out.println(e.getMessage());
         }
     }
 
-    public void delete(int entryId) {
+    public void delete(
+            Connection connection,
+            int entryId)
+            throws SQLException {
 
         String sql = """
-                DELETE FROM ingresos
-                WHERE id_ingreso = ?
+                DELETE FROM entries
+                WHERE entry_id = ?
                 """;
 
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
 
             statement.setInt(
                     1,
@@ -269,118 +454,144 @@ public class EntryDAO {
             );
 
             statement.executeUpdate();
-
-            System.out.println(
-                    "Entry deleted successfully."
-            );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error deleting entry."
-            );
-
-            System.out.println(e.getMessage());
         }
     }
 
-    public List<Entry> listByAnimal(int animalId) {
+    public void delete(
+            int entryId) {
 
-        List<Entry> entries = new ArrayList<>();
+        try (Connection connection =
+                     SQLiteConnection.connect()) {
 
-        String sql = """
-                SELECT DISTINCT
-                    i.id_ingreso,
-                    i.numero_acta,
-                    i.fecha_ingreso,
-                    i.organismo_procedencia,
-                    i.responsable_entrega,
-                    i.procedencia,
-                    i.motivo_ingreso,
-                    i.documentacion,
-                    i.observaciones
-                FROM ingresos i
-                INNER JOIN detalle_ingreso d
-                    ON i.id_ingreso = d.id_ingreso
-                WHERE d.id_animal = ?
-                ORDER BY i.id_ingreso DESC
-                """;
-
-        try (Connection connection = SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
-
-            statement.setInt(
-                    1,
-                    animalId
+            delete(
+                    connection,
+                    entryId
             );
 
-            try (ResultSet result =
-                         statement.executeQuery()) {
+        } catch (SQLException exception) {
 
-                while (result.next()) {
-
-                    Entry entry = new Entry();
-
-                    entry.setEntryId(
-                            result.getInt("id_ingreso")
-                    );
-
-                    entry.setRecordNumber(
-                            result.getString("numero_acta")
-                    );
-
-                    entry.setEntryDate(
-                            result.getString("fecha_ingreso")
-                    );
-
-                    entry.setSourceOrganization(
-                            result.getString(
-                                    "organismo_procedencia"
-                            )
-                    );
-
-                    entry.setDeliveryResponsible(
-                            result.getString(
-                                    "responsable_entrega"
-                            )
-                    );
-
-                    entry.setOrigin(
-                            result.getString("procedencia")
-                    );
-
-                    entry.setEntryReason(
-                            result.getString(
-                                    "motivo_ingreso"
-                            )
-                    );
-
-                    entry.setDocumentation(
-                            result.getString(
-                                    "documentacion"
-                            )
-                    );
-
-                    entry.setObservations(
-                            result.getString(
-                                    "observaciones"
-                            )
-                    );
-
-                    entries.add(entry);
-                }
-            }
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error listing entries by animal."
+            throw new RuntimeException(
+                    "Error deleting entry.",
+                    exception
             );
+        }
+    }
 
-            System.out.println(e.getMessage());
+    // =========================================================
+    // APPEND OBSERVATION
+    // =========================================================
+
+    public void appendObservation(
+            Connection connection,
+            int entryId,
+            String observation)
+            throws SQLException {
+
+        if (observation == null
+                || observation.isBlank()) {
+
+            return;
         }
 
-        return entries;
+        String sql = """
+                UPDATE entries
+                SET observations =
+                    CASE
+                        WHEN observations IS NULL
+                             OR TRIM(observations) = ''
+                        THEN ?
+                        ELSE observations
+                             || CHAR(10)
+                             || ?
+                    END
+                WHERE entry_id = ?
+                """;
+
+        try (
+                PreparedStatement statement =
+                        connection.prepareStatement(sql)
+        ) {
+
+            statement.setString(
+                    1,
+                    observation.trim()
+            );
+
+            statement.setString(
+                    2,
+                    observation.trim()
+            );
+
+            statement.setInt(
+                    3,
+                    entryId
+            );
+
+            statement.executeUpdate();
+        }
+    }
+
+    private Entry mapResultSet(
+            ResultSet resultSet)
+            throws SQLException {
+
+        Entry entry =
+                new Entry();
+
+        entry.setEntryId(
+                resultSet.getInt(
+                        "entry_id"
+                )
+        );
+
+        entry.setRecordNumber(
+                resultSet.getString(
+                        "record_number"
+                )
+        );
+
+        entry.setEntryDate(
+                resultSet.getString(
+                        "entry_date"
+                )
+        );
+
+        entry.setSourceOrganization(
+                resultSet.getString(
+                        "source_organization"
+                )
+        );
+
+        entry.setDeliveryResponsible(
+                resultSet.getString(
+                        "delivery_responsible"
+                )
+        );
+
+        entry.setOrigin(
+                resultSet.getString(
+                        "origin"
+                )
+        );
+
+        entry.setEntryReason(
+                resultSet.getString(
+                        "entry_reason"
+                )
+        );
+
+        entry.setDocumentation(
+                resultSet.getString(
+                        "documentation"
+                )
+        );
+
+        entry.setObservations(
+                resultSet.getString(
+                        "observations"
+                )
+        );
+
+        return entry;
     }
 }

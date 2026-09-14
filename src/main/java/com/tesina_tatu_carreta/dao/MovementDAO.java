@@ -1,248 +1,217 @@
 package com.tesina_tatu_carreta.dao;
 
+import com.tesina_tatu_carreta.model.Movement;
+import com.tesina_tatu_carreta.database.SQLiteConnection;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.tesina_tatu_carreta.database.SQLiteConnection;
-import com.tesina_tatu_carreta.model.Movement;
-
 public class MovementDAO {
 
-    // =========================
-    // ADD
-    // =========================
+        public void add(Movement movement) {
 
-    public void add(Movement movement) {
+                try (
+                                Connection connection = SQLiteConnection.connect()) {
 
-        String sql = """
-                INSERT INTO movimientos (
-                    id_animal,
-                    id_ingreso,
-                    fecha_movimiento,
-                    tipo_movimiento,
-                    cantidad,
-                    destino,
-                    observaciones
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """;
+                        add(connection, movement);
 
-        try (Connection connection =
-                     SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+                } catch (SQLException exception) {
 
-            statement.setInt(
-                    1,
-                    movement.getAnimalId()
-            );
-
-            // OPTIONAL ENTRY ID
-            if (movement.getEntryId() != null) {
-
-                statement.setInt(
-                        2,
-                        movement.getEntryId()
-                );
-
-            } else {
-
-                statement.setNull(
-                        2,
-                        java.sql.Types.INTEGER
-                );
-            }
-
-            statement.setString(
-                    3,
-                    movement.getMovementDate()
-            );
-
-            statement.setString(
-                    4,
-                    movement.getMovementType()
-            );
-
-            statement.setInt(
-                    5,
-                    movement.getQuantity()
-            );
-
-            statement.setString(
-                    6,
-                    movement.getDestination()
-            );
-
-            statement.setString(
-                    7,
-                    movement.getObservations()
-            );
-
-            statement.executeUpdate();
-
-            System.out.println(
-                    "Movement added successfully."
-            );
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error adding movement."
-            );
-
-            System.out.println(e.getMessage());
+                        throw new RuntimeException(
+                                        "Error adding movement.",
+                                        exception);
+                }
         }
-    }
 
+        public int add(
+                        Connection connection,
+                        Movement movement)
+                        throws SQLException {
 
-    // =========================
-    // LIST
-    // =========================
+                String sql = """
+                                INSERT INTO movements
+                                (
+                                    animal_id,
+                                    entry_id,
+                                    movement_date,
+                                    movement_type,
+                                    quantity,
+                                    origin_location,
+                                    destination,
+                                    observations
+                                )
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                """;
 
-    public List<Movement> list() {
+                try (PreparedStatement statement = connection.prepareStatement(
+                                sql,
+                                Statement.RETURN_GENERATED_KEYS)) {
 
-        List<Movement> movements =
-                new ArrayList<>();
+                        statement.setInt(
+                                        1,
+                                        movement.getAnimalId());
 
-        String sql = """
-                SELECT
-                    id_movimiento,
-                    id_animal,
-                    id_ingreso,
-                    fecha_movimiento,
-                    tipo_movimiento,
-                    cantidad,
-                    destino,
-                    observaciones
-                FROM movimientos
-                ORDER BY fecha_movimiento DESC
-                """;
+                        if (movement.getEntryId() == null) {
+                                statement.setNull(
+                                                2,
+                                                Types.INTEGER);
+                        } else {
+                                statement.setInt(
+                                                2,
+                                                movement.getEntryId());
+                        }
 
-        try (Connection connection =
-                     SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql);
-             ResultSet result =
-                     statement.executeQuery()) {
+                        statement.setString(
+                                        3,
+                                        movement.getMovementDate());
 
-            while (result.next()) {
+                        statement.setString(
+                                        4,
+                                        movement.getMovementType());
 
-                Movement movement =
-                        new Movement();
+                        statement.setInt(
+                                        5,
+                                        movement.getQuantity());
 
-                movement.setMovementId(
-                        result.getInt(
-                                "id_movimiento"
-                        )
-                );
+                        if (movement.getOriginLocation() == null) {
+                                statement.setNull(
+                                                6,
+                                                Types.VARCHAR);
+                        } else {
+                                statement.setString(
+                                                6,
+                                                movement.getOriginLocation());
+                        }
 
-                movement.setAnimalId(
-                        result.getInt(
-                                "id_animal"
-                        )
-                );
+                        if (movement.getDestination() == null) {
+                                statement.setNull(
+                                                7,
+                                                Types.VARCHAR);
+                        } else {
+                                statement.setString(
+                                                7,
+                                                movement.getDestination());
+                        }
 
-                int entryId =
-                        result.getInt(
-                                "id_ingreso"
-                        );
+                        statement.setString(
+                                        8,
+                                        movement.getObservations());
 
-                if (result.wasNull()) {
+                        statement.executeUpdate();
 
-                    movement.setEntryId(null);
+                        try (ResultSet keys = statement.getGeneratedKeys()) {
 
-                } else {
-
-                    movement.setEntryId(
-                            entryId
-                    );
+                                if (keys.next()) {
+                                        return keys.getInt(1);
+                                }
+                        }
                 }
 
-                movement.setMovementDate(
-                        result.getString(
-                                "fecha_movimiento"
-                        )
-                );
-
-                movement.setMovementType(
-                        result.getString(
-                                "tipo_movimiento"
-                        )
-                );
-
-                movement.setQuantity(
-                        result.getInt(
-                                "cantidad"
-                        )
-                );
-
-                movement.setDestination(
-                        result.getString(
-                                "destino"
-                        )
-                );
-
-                movement.setObservations(
-                        result.getString(
-                                "observaciones"
-                        )
-                );
-
-                movements.add(
-                        movement
-                );
-            }
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Error listing movements."
-            );
-
-            System.out.println(e.getMessage());
+                return 0;
         }
 
-        return movements;
-    }
+        public List<Movement> list() {
 
+                List<Movement> result = new ArrayList<>();
 
-    // =========================
-    // DELETE
-    // =========================
+                String sql = """
+                                SELECT
+                                    movement_id,
+                                    animal_id,
+                                    entry_id,
+                                    movement_date,
+                                    movement_type,
+                                    quantity,
+                                    origin_location,
+                                    destination,
+                                    observations
+                                FROM movements
+                                ORDER BY movement_id DESC
+                                """;
 
-    public void delete(int movementId) {
+                try (Connection connection = SQLiteConnection.connect();
+                                PreparedStatement statement = connection.prepareStatement(sql);
+                                ResultSet resultSet = statement.executeQuery()) {
 
-        String sql = """
-                DELETE FROM movimientos
-                WHERE id_movimiento = ?
-                """;
+                        while (resultSet.next()) {
 
-        try (Connection connection =
-                     SQLiteConnection.connect();
-             PreparedStatement statement =
-                     connection.prepareStatement(sql)) {
+                                Movement movement = new Movement();
 
-            statement.setInt(
-                    1,
-                    movementId
-            );
+                                movement.setMovementId(
+                                                resultSet.getInt(
+                                                                "movement_id"));
 
-            statement.executeUpdate();
+                                movement.setAnimalId(
+                                                resultSet.getInt(
+                                                                "animal_id"));
 
-            System.out.println(
-                    "Movement deleted successfully."
-            );
+                                int entryId = resultSet.getInt(
+                                                "entry_id");
 
-        } catch (Exception e) {
+                                movement.setEntryId(
+                                                resultSet.wasNull()
+                                                                ? null
+                                                                : entryId);
 
-            System.out.println(
-                    "Error deleting movement."
-            );
+                                movement.setMovementDate(
+                                                resultSet.getString(
+                                                                "movement_date"));
 
-            System.out.println(e.getMessage());
+                                movement.setMovementType(
+                                                resultSet.getString(
+                                                                "movement_type"));
+
+                                movement.setQuantity(
+                                                resultSet.getInt(
+                                                                "quantity"));
+
+                                movement.setOriginLocation(
+                                                resultSet.getString(
+                                                                "origin_location"));
+
+                                movement.setDestination(
+                                                resultSet.getString(
+                                                                "destination"));
+
+                                movement.setObservations(
+                                                resultSet.getString(
+                                                                "observations"));
+
+                                result.add(movement);
+                        }
+
+                } catch (SQLException exception) {
+                        exception.printStackTrace();
+                }
+
+                return result;
         }
-    }
+
+        public boolean existsForEntry(
+                        int entryId) {
+
+                String sql = "SELECT COUNT(*) FROM movements WHERE entry_id = ?";
+
+                try (Connection connection = SQLiteConnection.connect();
+                                PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                        statement.setInt(1, entryId);
+
+                        try (ResultSet result = statement.executeQuery()) {
+
+                                return result.next()
+                                                && result.getInt(1) > 0;
+                        }
+
+                } catch (SQLException exception) {
+                        exception.printStackTrace();
+                        return false;
+                }
+        }
 }
