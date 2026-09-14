@@ -3,6 +3,7 @@ package com.tesina_tatu_carreta.dao;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,10 +11,6 @@ import com.tesina_tatu_carreta.database.SQLiteConnection;
 import com.tesina_tatu_carreta.model.Animal;
 
 public class AnimalDAO {
-
-    // =========================================================
-    // ADD
-    // =========================================================
 
     public void add(Animal animal) {
 
@@ -29,58 +26,53 @@ public class AnimalDAO {
                 VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
-        try (
-                Connection connection =
-                        SQLiteConnection.connect();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(sql)
-        ) {
+        try (Connection connection = SQLiteConnection.connect();
+             PreparedStatement statement = connection.prepareStatement(
+                     sql,
+                     Statement.RETURN_GENERATED_KEYS)) {
 
             statement.setInt(
                     1,
-                    animal.getSpeciesId()
-            );
+                    animal.getSpeciesId());
 
             statement.setString(
                     2,
-                    animal.getCommonName()
-            );
+                    animal.getCommonName());
 
             statement.setString(
                     3,
-                    animal.getScientificName()
-            );
+                    animal.getScientificName());
 
             statement.setInt(
                     4,
-                    0
-            );
+                    0);
 
             statement.setString(
                     5,
-                    animal.getOrigin()
-            );
+                    animal.getOrigin());
 
             statement.setString(
                     6,
-                    animal.getStatus()
-            );
+                    animal.getStatus());
 
             statement.executeUpdate();
+
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+
+                if (generatedKeys.next()) {
+
+                    animal.setAnimalId(
+                            generatedKeys.getInt(1));
+                }
+            }
 
         } catch (Exception exception) {
 
             throw new RuntimeException(
                     "Error adding animal.",
-                    exception
-            );
+                    exception);
         }
     }
-
-    // =========================================================
-    // UPDATE
-    // =========================================================
 
     public void update(Animal animal) {
 
@@ -95,43 +87,32 @@ public class AnimalDAO {
                 WHERE animal_id = ?
                 """;
 
-        try (
-                Connection connection =
-                        SQLiteConnection.connect();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(sql)
-        ) {
+        try (Connection connection = SQLiteConnection.connect();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(
                     1,
-                    animal.getSpeciesId()
-            );
+                    animal.getSpeciesId());
 
             statement.setString(
                     2,
-                    animal.getCommonName()
-            );
+                    animal.getCommonName());
 
             statement.setString(
                     3,
-                    animal.getScientificName()
-            );
+                    animal.getScientificName());
 
             statement.setString(
                     4,
-                    animal.getOrigin()
-            );
+                    animal.getOrigin());
 
             statement.setString(
                     5,
-                    animal.getStatus()
-            );
+                    animal.getStatus());
 
             statement.setInt(
                     6,
-                    animal.getAnimalId()
-            );
+                    animal.getAnimalId());
 
             statement.executeUpdate();
 
@@ -139,14 +120,9 @@ public class AnimalDAO {
 
             throw new RuntimeException(
                     "Error updating animal.",
-                    exception
-            );
+                    exception);
         }
     }
-
-    // =========================================================
-    // UPDATE CURRENT QUANTITY
-    // =========================================================
 
     public void updateCurrentQuantity(
             Connection connection,
@@ -167,33 +143,24 @@ public class AnimalDAO {
                 WHERE animal_id = ?
                 """;
 
-        try (
-                PreparedStatement statement =
-                        connection.prepareStatement(sql)
-        ) {
+        try (PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
 
             statement.setInt(
                     1,
-                    currentQuantity
-            );
+                    currentQuantity);
 
             statement.setString(
                     2,
-                    status
-            );
+                    status);
 
             statement.setInt(
                     3,
-                    animalId
-            );
+                    animalId);
 
             statement.executeUpdate();
         }
     }
-
-    // =========================================================
-    // DELETE
-    // =========================================================
 
     public void delete(int animalId) {
 
@@ -202,18 +169,13 @@ public class AnimalDAO {
                 WHERE animal_id = ?
                 """;
 
-        try (
-                Connection connection =
-                        SQLiteConnection.connect();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(sql)
-        ) {
+        try (Connection connection = SQLiteConnection.connect();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
 
             statement.setInt(
                     1,
-                    animalId
-            );
+                    animalId);
 
             statement.executeUpdate();
 
@@ -221,19 +183,13 @@ public class AnimalDAO {
 
             throw new RuntimeException(
                     "Error deleting animal.",
-                    exception
-            );
+                    exception);
         }
     }
 
-    // =========================================================
-    // LIST
-    // =========================================================
-
     public List<Animal> list() {
 
-        List<Animal> animals =
-                new ArrayList<>();
+        List<Animal> animals = new ArrayList<>();
 
         String sql = """
                 SELECT
@@ -248,49 +204,37 @@ public class AnimalDAO {
                 ORDER BY common_name
                 """;
 
-        try (
-                Connection connection =
-                        SQLiteConnection.connect();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(sql);
-
-                ResultSet result =
-                        statement.executeQuery()
-        ) {
+        try (Connection connection =
+                     SQLiteConnection.connect();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql);
+             ResultSet result =
+                     statement.executeQuery()) {
 
             while (result.next()) {
 
-                Animal animal =
-                        new Animal();
+                Animal animal = new Animal();
 
                 animal.setAnimalId(
-                        result.getInt("animal_id")
-                );
+                        result.getInt("animal_id"));
 
                 animal.setSpeciesId(
-                        result.getInt("species_id")
-                );
+                        result.getInt("species_id"));
 
                 animal.setCommonName(
-                        result.getString("common_name")
-                );
+                        result.getString("common_name"));
 
                 animal.setScientificName(
-                        result.getString("scientific_name")
-                );
+                        result.getString("scientific_name"));
 
                 animal.setCurrentQuantity(
-                        result.getInt("current_quantity")
-                );
+                        result.getInt("current_quantity"));
 
                 animal.setOrigin(
-                        result.getString("origin")
-                );
+                        result.getString("origin"));
 
                 animal.setStatus(
-                        result.getString("status")
-                );
+                        result.getString("status"));
 
                 animals.add(animal);
             }
@@ -299,16 +243,11 @@ public class AnimalDAO {
 
             throw new RuntimeException(
                     "Error listing animals.",
-                    exception
-            );
+                    exception);
         }
 
         return animals;
     }
-
-    // =========================================================
-    // FIND BY ID
-    // =========================================================
 
     public Animal findById(int animalId) {
 
@@ -325,56 +264,42 @@ public class AnimalDAO {
                 WHERE animal_id = ?
                 """;
 
-        try (
-                Connection connection =
-                        SQLiteConnection.connect();
-
-                PreparedStatement statement =
-                        connection.prepareStatement(sql)
-        ) {
+        try (Connection connection =
+                     SQLiteConnection.connect();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
 
             statement.setInt(
                     1,
-                    animalId
-            );
+                    animalId);
 
-            try (
-                    ResultSet result =
-                            statement.executeQuery()
-            ) {
+            try (ResultSet result =
+                         statement.executeQuery()) {
 
                 if (result.next()) {
 
-                    Animal animal =
-                            new Animal();
+                    Animal animal = new Animal();
 
                     animal.setAnimalId(
-                            result.getInt("animal_id")
-                    );
+                            result.getInt("animal_id"));
 
                     animal.setSpeciesId(
-                            result.getInt("species_id")
-                    );
+                            result.getInt("species_id"));
 
                     animal.setCommonName(
-                            result.getString("common_name")
-                    );
+                            result.getString("common_name"));
 
                     animal.setScientificName(
-                            result.getString("scientific_name")
-                    );
+                            result.getString("scientific_name"));
 
                     animal.setCurrentQuantity(
-                            result.getInt("current_quantity")
-                    );
+                            result.getInt("current_quantity"));
 
                     animal.setOrigin(
-                            result.getString("origin")
-                    );
+                            result.getString("origin"));
 
                     animal.setStatus(
-                            result.getString("status")
-                    );
+                            result.getString("status"));
 
                     return animal;
                 }
@@ -384,8 +309,7 @@ public class AnimalDAO {
 
             throw new RuntimeException(
                     "Error finding animal.",
-                    exception
-            );
+                    exception);
         }
 
         return null;
